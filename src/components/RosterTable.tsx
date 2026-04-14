@@ -22,20 +22,20 @@ export const RosterTable: React.FC<RosterTableProps> = ({
   const dates = roster.map(e => e.data);
 
   return (
-    <div id="roster-table-container" className="bg-white rounded-2xl border border-border-sleek shadow-sleek overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-sm">
+    <div id="roster-table-container" className="glass-panel rounded-[2rem] border border-white/5 shadow-2xl overflow-hidden">
+      <div className="overflow-x-auto custom-scrollbar">
+        <table className="w-full border-collapse text-sm font-mono">
           <thead>
-            <tr className="bg-white border-b border-border-sleek text-text-main">
-              <th className="sticky left-0 z-20 bg-white p-6 text-left font-bold text-xs uppercase tracking-widest min-w-[220px] border-r border-border-sleek">
-                Militar
+            <tr className="bg-white/5 border-b border-white/5 text-text-main">
+              <th className="sticky left-0 z-20 bg-bg-card p-6 text-left border-r border-white/5 min-w-[240px]">
+                <div className="label-tech">Operador / Militar</div>
               </th>
               {dates.map(date => {
                 const d = parseISO(date);
                 return (
-                  <th key={date} className="p-4 text-center min-w-[110px] border-r border-border-sleek">
-                    <div className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1">{format(d, 'EEE', { locale: ptBR })}</div>
-                    <div className="text-sm font-extrabold">{format(d, 'dd/MM')}</div>
+                  <th key={date} className="p-4 text-center min-w-[120px] border-r border-white/5">
+                    <div className="text-[10px] font-bold text-accent uppercase tracking-widest mb-1">{format(d, 'EEE', { locale: ptBR })}</div>
+                    <div className="text-sm font-black text-text-main">{format(d, 'dd/MM')}</div>
                   </th>
                 );
               })}
@@ -43,13 +43,13 @@ export const RosterTable: React.FC<RosterTableProps> = ({
           </thead>
           <tbody>
             {militares.map((m, idx) => (
-              <tr key={m.id} className="group hover:bg-bg-main transition-colors border-b border-border-sleek last:border-0">
-                <td className="sticky left-0 z-10 bg-white p-6 font-bold text-text-main border-r border-border-sleek shadow-[4px_0_10px_-5px_rgba(0,0,0,0.05)]">
-                  <div className="flex items-center gap-3">
-                    <span className="text-[10px] bg-accent text-primary px-2 py-1 rounded-md font-extrabold">
+              <tr key={m.id} className="group hover:bg-white/5 transition-colors border-b border-white/5 last:border-0">
+                <td className="sticky left-0 z-10 bg-bg-card p-6 font-bold text-text-main border-r border-white/5 shadow-[10px_0_20px_-10px_rgba(0,0,0,0.5)]">
+                  <div className="flex items-center gap-4">
+                    <span className="text-[10px] bg-white/5 text-accent px-2.5 py-1 rounded-lg font-black border border-white/5">
                       {String(idx + 1).padStart(2, '0')}
                     </span>
-                    {m.name}
+                    <span className="tracking-tight font-display font-bold">{m.name}</span>
                   </div>
                 </td>
                 {dates.map(dateStr => {
@@ -60,39 +60,49 @@ export const RosterTable: React.FC<RosterTableProps> = ({
                   const isNavioPausa = entry?.status === 'NAVIO';
 
                   let content = null;
-                  let cellClass = "p-4 text-center border-r border-border-sleek min-h-[70px]";
+                  let cellClass = "p-4 text-center border-r border-white/5 min-h-[80px] transition-all";
 
                   if (isNavioPausa) {
-                    cellClass = cn(cellClass, "bg-bg-main text-text-muted opacity-40");
-                    content = <Ship className="w-4 h-4 mx-auto" />;
+                    cellClass = cn(cellClass, "bg-bg-main/40 text-text-muted opacity-20");
+                    content = <Ship className="w-5 h-5 mx-auto opacity-50" />;
                   } else if (isTitular) {
-                    cellClass = cn(cellClass, "bg-primary text-white hover:bg-primary/90 transition-all shadow-inner");
+                    cellClass = cn(cellClass, "bg-primary text-white shadow-inner relative overflow-hidden");
                     content = (
-                      <div className="flex flex-col items-center gap-1">
-                        <div className="flex items-center gap-1 font-extrabold text-[11px] uppercase tracking-tighter">
-                          <Zap className="w-3 h-3 fill-current" />
-                          SERV {entry?.emNavio && <Ship className="w-3 h-3" />}
+                      <div className="flex flex-col items-center gap-1.5 relative z-10">
+                        <div className="flex items-center gap-1.5 font-black text-[11px] uppercase tracking-wider">
+                          <Zap className="w-3.5 h-3.5 fill-accent text-accent" />
+                          <span className="text-accent">SERV</span> 
+                          {entry?.emNavio && <Ship className="w-3.5 h-3.5 text-white" />}
                         </div>
                         {entry?.acompanhanteId && (
-                          <div className="text-[9px] font-medium opacity-80 truncate max-w-full">
+                          <div className="text-[9px] font-bold opacity-90 truncate max-w-full bg-white/10 px-2 py-0.5 rounded-full">
                             + {militares.find(mil => mil.id === entry.acompanhanteId)?.name.split(' ')[0]}
                           </div>
                         )}
+                        <div className="absolute -right-4 -bottom-4 opacity-10">
+                          <Zap className="w-12 h-12" />
+                        </div>
                       </div>
                     );
                   } else if (isAcompanhante) {
-                    cellClass = cn(cellClass, "bg-purple-500 text-white");
+                    cellClass = cn(cellClass, "bg-primary-light/40 text-white");
                     content = (
                       <div className="flex flex-col items-center gap-1">
-                        <BookOpen className="w-3 h-3" />
-                        <span className="text-[10px] font-extrabold uppercase tracking-tighter">ACOMP</span>
+                        <BookOpen className="w-3.5 h-3.5 text-accent" />
+                        <span className="text-[10px] font-black uppercase tracking-tighter text-accent">ACOMP</span>
                       </div>
                     );
                   } else if (statusAtivo) {
-                    cellClass = cn(cellClass, STATUS_COLORS[statusAtivo], "font-extrabold text-[10px] uppercase tracking-tighter");
-                    content = <span>{STATUS_LABELS[statusAtivo]}</span>;
+                    const statusColor = STATUS_COLORS[statusAtivo];
+                    // Map status colors to naval theme
+                    const navalStatusColor = statusAtivo === 'FERIAS' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20' :
+                                           statusAtivo === 'CURSO' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/20' :
+                                           'bg-red-500/20 text-red-400 border border-red-500/20';
+                    
+                    cellClass = cn(cellClass, navalStatusColor, "font-black text-[10px] uppercase tracking-tighter");
+                    content = <span className="animate-pulse-subtle">{STATUS_LABELS[statusAtivo]}</span>;
                   } else {
-                    content = <span className="text-border-sleek">—</span>;
+                    content = <span className="text-white/5">—</span>;
                   }
 
                   const isClickable = !isNavioPausa;
@@ -103,7 +113,7 @@ export const RosterTable: React.FC<RosterTableProps> = ({
                       className={cn(
                         cellClass, 
                         isClickable && "cursor-pointer transition-all",
-                        isClickable && !isTitular && !isAcompanhante && !statusAtivo && "hover:bg-accent/50"
+                        isClickable && !isTitular && !isAcompanhante && !statusAtivo && "hover:bg-white/5"
                       )}
                       onClick={isClickable ? () => onCellClick(dateStr, m.id) : undefined}
                     >

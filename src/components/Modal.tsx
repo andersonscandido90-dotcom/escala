@@ -28,20 +28,23 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             className={cn(
-              "relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden border border-border-sleek",
+              "relative w-full max-w-lg bg-bg-card rounded-[2rem] shadow-2xl overflow-hidden border border-white/10",
               className
             )}
           >
-            <div className="flex items-center justify-between p-6 border-b border-border-sleek">
-              <h3 className="text-lg font-bold text-text-main">{title}</h3>
+            <div className="flex items-center justify-between p-8 border-b border-white/5 bg-white/5">
+              <div>
+                <div className="label-tech mb-1">Confirmação de Sistema</div>
+                <h3 className="text-xl font-display font-black text-text-main tracking-tight">{title}</h3>
+              </div>
               <button
                 onClick={onClose}
-                className="p-2 hover:bg-bg-main rounded-xl transition-colors text-text-muted hover:text-text-main"
+                className="p-3 hover:bg-white/10 rounded-2xl transition-colors text-text-muted hover:text-text-main border border-white/5"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="p-6">
+            <div className="p-8">
               {children}
             </div>
           </motion.div>

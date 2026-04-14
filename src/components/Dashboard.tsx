@@ -12,8 +12,9 @@ import {
   Cell,
   Legend
 } from 'recharts';
-import { Military, RosterEntry, StatusPeriod, STATUS_COLORS } from '../types';
-import { Users, Calendar, ShieldAlert, Ship } from 'lucide-react';
+import { Military, RosterEntry, StatusPeriod } from '../types';
+import { Users, Calendar, ShieldAlert, Ship, Zap } from 'lucide-react';
+import { cn } from '../lib/utils';
 
 interface DashboardProps {
   militares: Military[];
@@ -45,78 +46,98 @@ export const Dashboard: React.FC<DashboardProps> = ({ militares, roster, statusP
       value: count,
     }));
 
-    return { chartData, pieData, totalServices: roster.filter(e => e.militaryId).length };
+    return { 
+      chartData, 
+      pieData, 
+      totalServices: roster.filter(e => e.militaryId).length,
+      shipDays: roster.filter(e => e.status === 'NAVIO' || e.emNavio).length
+    };
   }, [militares, roster, statusPeriods]);
 
-  const COLORS = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+  const COLORS = ['#C5A059', '#1A5F7A', '#002B5B', '#ef4444', '#8b5cf6', '#ec4899'];
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-8">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <StatCard 
-          title="Total Militares" 
+          title="Efetivo Total" 
           value={militares.length} 
-          icon={<Users className="w-5 h-5 text-primary" />} 
+          icon={<Users className="w-5 h-5 text-accent" />} 
+          label="MILITARES ATIVOS"
         />
         <StatCard 
-          title="Serviços no Período" 
+          title="Serviços Alocados" 
           value={stats.totalServices} 
-          icon={<Calendar className="w-5 h-5 text-emerald-500" />} 
+          icon={<Zap className="w-5 h-5 text-accent" />} 
+          label="MISSÕES ESCALADAS"
         />
         <StatCard 
-          title="Impedimentos Ativos" 
+          title="Impedimentos" 
           value={statusPeriods.length} 
-          icon={<ShieldAlert className="w-5 h-5 text-red-500" />} 
+          icon={<ShieldAlert className="w-5 h-5 text-red-400" />} 
+          label="RESTRIÇÕES TÉCNICAS"
         />
         <StatCard 
-          title="Dias de Mar" 
-          value={roster.filter(e => e.status === 'NAVIO' || e.emNavio).length} 
-          icon={<Ship className="w-5 h-5 text-text-muted" />} 
+          title="Dias em Mar" 
+          value={stats.shipDays} 
+          icon={<Ship className="w-5 h-5 text-primary-light" />} 
+          label="OPERAÇÃO A140"
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white p-8 rounded-2xl border border-border-sleek shadow-sleek">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="glass-panel p-8 rounded-[2rem] border border-white/5 shadow-2xl">
           <div className="flex justify-between items-center mb-8">
-            <h3 className="text-lg font-bold text-text-main">Distribuição de Serviços</h3>
-            <span className="text-primary text-xs font-bold cursor-pointer">Ver Detalhes</span>
+            <div>
+              <div className="label-tech mb-1">Análise de Carga</div>
+              <h3 className="text-xl font-display font-black text-text-main tracking-tight">Distribuição de Serviços</h3>
+            </div>
           </div>
-          <div className="h-[240px]">
+          <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={stats.chartData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" fontSize={11} tickLine={false} axisLine={false} tick={{ fill: '#64748b' }} />
-                <YAxis fontSize={11} tickLine={false} axisLine={false} tick={{ fill: '#64748b' }} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(148, 163, 184, 0.1)" />
+                <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} tick={{ fill: '#94A3B8', fontWeight: 'bold' }} />
+                <YAxis fontSize={10} tickLine={false} axisLine={false} tick={{ fill: '#94A3B8', fontWeight: 'bold' }} />
                 <Tooltip 
-                  cursor={{ fill: '#eff6ff' }}
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                  cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }}
+                  contentStyle={{ backgroundColor: '#151E3F', borderRadius: '16px', border: '1px solid rgba(255, 255, 255, 0.1)', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}
+                  itemStyle={{ color: '#E2E8F0', fontSize: '12px', fontWeight: 'bold' }}
                 />
-                <Bar dataKey="servicos" fill="#2563eb" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="servicos" fill="#C5A059" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="bg-white p-8 rounded-2xl border border-border-sleek shadow-sleek">
-          <h3 className="text-lg font-bold text-text-main mb-8">Tipos de Impedimentos</h3>
-          <div className="h-[240px]">
+        <div className="glass-panel p-8 rounded-[2rem] border border-white/5 shadow-2xl">
+          <div className="label-tech mb-1">Status de Quadro</div>
+          <h3 className="text-xl font-display font-black text-text-main tracking-tight mb-8">Tipos de Impedimentos</h3>
+          <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={stats.pieData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={5}
+                  innerRadius={70}
+                  outerRadius={100}
+                  paddingAngle={8}
                   dataKey="value"
                 >
                   {stats.pieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="none" />
                   ))}
                 </Pie>
-                <Tooltip />
-                <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px', paddingTop: '20px' }} />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#151E3F', borderRadius: '16px', border: '1px solid rgba(255, 255, 255, 0.1)' }}
+                />
+                <Legend 
+                  verticalAlign="bottom" 
+                  height={36} 
+                  iconType="circle" 
+                  wrapperStyle={{ fontSize: '11px', fontWeight: 'bold', color: '#94A3B8', paddingTop: '20px' }} 
+                />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -126,14 +147,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ militares, roster, statusP
   );
 };
 
-const StatCard = ({ title, value, icon }: { title: string, value: number | string, icon: React.ReactNode }) => (
-  <div className="bg-white p-6 rounded-2xl border border-border-sleek shadow-sleek flex flex-col gap-4">
-    <div className="flex justify-between items-start">
-      <p className="text-[11px] font-bold text-text-muted uppercase tracking-wider">{title}</p>
-      <div className="p-2 bg-accent rounded-lg">
+const StatCard = ({ title, value, icon, label }: { title: string, value: number | string, icon: React.ReactNode, label: string }) => (
+  <div className="glass-panel p-6 rounded-[2rem] border border-white/5 shadow-2xl flex flex-col gap-4 relative overflow-hidden group">
+    <div className="flex justify-between items-start relative z-10">
+      <div className="flex flex-col">
+        <p className="text-[10px] font-mono font-bold text-text-muted uppercase tracking-widest mb-1">{title}</p>
+        <p className="text-3xl font-display font-black text-text-main tracking-tighter">{value}</p>
+      </div>
+      <div className="p-3 bg-white/5 rounded-2xl border border-white/5 group-hover:bg-accent/10 transition-colors">
         {icon}
       </div>
     </div>
-    <p className="text-3xl font-bold text-text-main">{value}</p>
+    <div className="text-[9px] font-mono font-bold text-text-muted tracking-[0.2em] relative z-10">{label}</div>
+    <div className="absolute -right-2 -bottom-2 opacity-[0.02] group-hover:opacity-[0.05] transition-opacity">
+      {icon}
+    </div>
   </div>
 );

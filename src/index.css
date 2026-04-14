@@ -1,37 +1,72 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@400;600;800&display=swap');
 @import "tailwindcss";
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  
-  --color-primary: #2563eb;
-  --color-bg-main: #f8fafc;
-  --color-text-main: #1e293b;
-  --color-text-muted: #64748b;
-  --color-card-bg: #ffffff;
-  --color-accent: #eff6ff;
-  --color-border-sleek: #e2e8f0;
-  
-  --shadow-sleek: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --font-display: "Outfit", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* Naval Technical Palette */
+  --color-primary: #002B5B; /* Deep Navy */
+  --color-primary-light: #1A5F7A;
+  --color-accent: #C5A059; /* Brass/Gold */
+  --color-bg-main: #0A1128; /* Darker Navy Background */
+  --color-bg-card: #151E3F; /* Card Background */
+  --color-text-main: #E2E8F0;
+  --color-text-muted: #94A3B8;
+  --color-border-sleek: rgba(148, 163, 184, 0.15);
+  --shadow-sleek: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
 }
 
 @layer base {
   body {
-    @apply bg-bg-main text-text-main antialiased;
-    font-family: var(--font-sans);
+    @apply bg-bg-main text-text-main font-sans antialiased selection:bg-accent selection:text-bg-main;
+  }
+
+  /* Custom Scrollbar - Technical Feel */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-bg-main;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-primary-light/30 rounded-full hover:bg-primary-light/50 transition-colors;
   }
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+.technical-grid {
+  background-image: radial-gradient(circle at 1px 1px, rgba(148, 163, 184, 0.05) 1px, transparent 0);
+  background-size: 24px 24px;
 }
 
-::-webkit-scrollbar-track {
-  @apply bg-transparent;
+.glass-panel {
+  @apply bg-bg-card/80 backdrop-blur-md border border-white/5;
 }
 
-::-webkit-scrollbar-thumb {
-  @apply bg-slate-200 rounded-full hover:bg-slate-300 transition-colors;
+.brass-glow {
+  box-shadow: 0 0 15px rgba(197, 160, 89, 0.2);
+}
+
+.nav-item-active {
+  @apply bg-primary text-white shadow-lg shadow-primary/20;
+}
+
+.nav-item-inactive {
+  @apply text-text-muted hover:bg-white/5 hover:text-text-main;
+}
+
+/* Technical Labels */
+.label-tech {
+  @apply text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-text-muted;
+}
+
+/* Animation for status badges */
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
