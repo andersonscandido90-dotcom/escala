@@ -1,5 +1,5 @@
 import React from 'react';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, isWeekend } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Military, RosterEntry, StatusPeriod, STATUS_COLORS, STATUS_LABELS } from '../types';
 import { getStatusAtivo, isMilitaryImpeded } from '../lib/rosterLogic';
@@ -32,10 +32,24 @@ export const RosterTable: React.FC<RosterTableProps> = ({
               </th>
               {dates.map(date => {
                 const d = parseISO(date);
+                const isVerm = isWeekend(d);
                 return (
-                  <th key={date} className="p-4 text-center min-w-[120px] border-r border-white/5">
-                    <div className="text-[10px] font-bold text-accent uppercase tracking-widest mb-1">{format(d, 'EEE', { locale: ptBR })}</div>
-                    <div className="text-sm font-black text-text-main">{format(d, 'dd/MM')}</div>
+                  <th key={date} className={cn(
+                    "p-4 text-center min-w-[120px] border-r border-white/5 transition-colors",
+                    isVerm && "bg-red-500/5"
+                  )}>
+                    <div className={cn(
+                      "text-[10px] font-bold uppercase tracking-widest mb-1",
+                      isVerm ? "text-red-400" : "text-accent"
+                    )}>
+                      {format(d, 'EEE', { locale: ptBR })}
+                    </div>
+                    <div className={cn(
+                      "text-sm font-black",
+                      isVerm ? "text-red-400" : "text-text-main"
+                    )}>
+                      {format(d, 'dd/MM')}
+                    </div>
                   </th>
                 );
               })}
@@ -49,7 +63,10 @@ export const RosterTable: React.FC<RosterTableProps> = ({
                     <span className="text-[10px] bg-white/5 text-accent px-2.5 py-1 rounded-lg font-black border border-white/5">
                       {String(idx + 1).padStart(2, '0')}
                     </span>
-                    <span className="tracking-tight font-display font-bold">{m.name}</span>
+                    <div className="flex flex-col">
+                      <span className="tracking-tight font-display font-bold leading-none">{m.name}</span>
+                      <span className="text-[9px] text-text-muted mt-1 font-mono font-bold uppercase tracking-widest">{m.quarto || 1}º QUARTO</span>
+                    </div>
                   </div>
                 </td>
                 {dates.map(dateStr => {
@@ -58,6 +75,7 @@ export const RosterTable: React.FC<RosterTableProps> = ({
                   const isTitular = entry?.militaryId === m.id;
                   const isAcompanhante = entry?.acompanhanteId === m.id;
                   const isNavioPausa = entry?.status === 'NAVIO';
+                  const isVerm = isWeekend(parseISO(dateStr));
 
                   let content = null;
                   let cellClass = "p-4 text-center border-r border-white/5 min-h-[80px] transition-all";
@@ -67,11 +85,12 @@ export const RosterTable: React.FC<RosterTableProps> = ({
                     content = <Ship className="w-5 h-5 mx-auto opacity-50" />;
                   } else if (isTitular) {
                     cellClass = cn(cellClass, "bg-primary text-white shadow-inner relative overflow-hidden");
+                    if (isVerm) cellClass = cn(cellClass, "brightness-110 brass-glow");
                     content = (
                       <div className="flex flex-col items-center gap-1.5 relative z-10">
                         <div className="flex items-center gap-1.5 font-black text-[11px] uppercase tracking-wider">
-                          <Zap className="w-3.5 h-3.5 fill-accent text-accent" />
-                          <span className="text-accent">SERV</span> 
+                          <Zap className={cn("w-3.5 h-3.5 fill-accent text-accent", isVerm && "text-red-400 fill-red-400")} />
+                          <span className={cn("text-accent", isVerm && "text-red-400")}>SERV</span> 
                           {entry?.emNavio && <Ship className="w-3.5 h-3.5 text-white" />}
                         </div>
                         {entry?.acompanhanteId && (
@@ -93,8 +112,6 @@ export const RosterTable: React.FC<RosterTableProps> = ({
                       </div>
                     );
                   } else if (statusAtivo) {
-                    const statusColor = STATUS_COLORS[statusAtivo];
-                    // Map status colors to naval theme
                     const navalStatusColor = statusAtivo === 'FERIAS' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20' :
                                            statusAtivo === 'CURSO' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/20' :
                                            'bg-red-500/20 text-red-400 border border-red-500/20';
@@ -113,7 +130,8 @@ export const RosterTable: React.FC<RosterTableProps> = ({
                       className={cn(
                         cellClass, 
                         isClickable && "cursor-pointer transition-all",
-                        isClickable && !isTitular && !isAcompanhante && !statusAtivo && "hover:bg-white/5"
+                        isClickable && !isTitular && !isAcompanhante && !statusAtivo && "hover:bg-white/5",
+                        isVerm && !isTitular && !isAcompanhante && !statusAtivo && "bg-red-500/[0.02]"
                       )}
                       onClick={isClickable ? () => onCellClick(dateStr, m.id) : undefined}
                     >

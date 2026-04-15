@@ -24,7 +24,8 @@ import {
   ShipPeriod, 
   ManualSwap, 
   RosterEntry,
-  STATUS_LABELS
+  STATUS_LABELS,
+  RosterModel
 } from './types';
 import { generateRoster } from './lib/rosterLogic';
 import { Dashboard } from './components/Dashboard';
@@ -48,6 +49,7 @@ export default function App() {
   const [shipPeriods, setShipPeriods] = useState<ShipPeriod[]>([]);
   const [manualSwaps, setManualSwaps] = useState<ManualSwap[]>([]);
   const [acompDuration, setAcompDuration] = useState(3);
+  const [rosterModel, setRosterModel] = useState<RosterModel>('CORRIDA');
   const [config, setConfig] = useState({
     startDate: format(addDays(new Date(), 1), 'yyyy-MM-dd'),
     days: 30
@@ -78,18 +80,21 @@ export default function App() {
         setShipPeriods(data.shipPeriods || []);
         setManualSwaps(data.manualSwaps || []);
         setAcompDuration(data.acompDuration || 3);
+        setRosterModel(data.rosterModel || 'CORRIDA');
         setNextIds(data.nextIds || { military: 1, status: 1, ship: 1 });
       } catch (e) {
         console.error('Error loading data', e);
       }
     } else {
       // Default data
-      const initialMilitares = Array.from({ length: 15 }, (_, i) => ({
+      const initialMilitares = Array.from({ length: 16 }, (_, i) => ({
         id: i + 1,
-        name: `Militar ${String(15 - i).padStart(2, '0')}`
+        name: `Militar ${String(i + 1).padStart(2, '0')}`,
+        quarto: (i % 4) + 1,
+        antiguidade: i + 1 // 1 = Antigo, 16 = Moderno
       }));
       setMilitares(initialMilitares);
-      setNextIds({ military: 16, status: 1, ship: 1 });
+      setNextIds({ military: 17, status: 1, ship: 1 });
     }
   }, []);
 
@@ -101,9 +106,10 @@ export default function App() {
       shipPeriods,
       manualSwaps,
       acompDuration,
+      rosterModel,
       nextIds
     }));
-  }, [militares, statusPeriods, shipPeriods, manualSwaps, acompDuration, nextIds]);
+  }, [militares, statusPeriods, shipPeriods, manualSwaps, acompDuration, rosterModel, nextIds]);
 
   // Generate Roster
   const roster = useMemo(() => {
@@ -114,13 +120,14 @@ export default function App() {
       statusPeriods,
       shipPeriods,
       manualSwaps,
-      acompDuration
+      acompDuration,
+      rosterModel
     );
-  }, [config, militares, statusPeriods, shipPeriods, manualSwaps, acompDuration]);
+  }, [config, militares, statusPeriods, shipPeriods, manualSwaps, acompDuration, rosterModel]);
 
   // Handlers
-  const handleAddMilitary = (name: string) => {
-    setMilitares([{ id: nextIds.military, name }, ...militares]);
+  const handleAddMilitary = (name: string, quarto: number = 1, antiguidade: number = 1) => {
+    setMilitares([...militares, { id: nextIds.military, name, quarto, antiguidade }]);
     setNextIds({ ...nextIds, military: nextIds.military + 1 });
   };
 
@@ -130,8 +137,8 @@ export default function App() {
     setManualSwaps([]); // Reset swaps to avoid inconsistency
   };
 
-  const handleUpdateMilitary = (id: number, name: string) => {
-    setMilitares(militares.map(m => m.id === id ? { ...m, name } : m));
+  const handleUpdateMilitary = (id: number, name: string, quarto: number, antiguidade: number) => {
+    setMilitares(militares.map(m => m.id === id ? { ...m, name, quarto, antiguidade } : m));
   };
 
   const handleAddStatus = (period: Omit<StatusPeriod, 'id'>) => {
@@ -393,6 +400,18 @@ export default function App() {
                     onChange={(e) => setAcompDuration(parseInt(e.target.value))}
                     className="bg-bg-main border border-white/10 rounded-xl px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main w-28"
                   />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="label-tech">Modelo de Escala</label>
+                  <select 
+                    value={rosterModel}
+                    onChange={(e) => setRosterModel(e.target.value as RosterModel)}
+                    className="bg-bg-main border border-white/10 rounded-xl px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main"
+                  >
+                    <option value="CORRIDA">Escala Corrida</option>
+                    <option value="QUARTOS">Escala por Quartos</option>
+                    <option value="PRETA_VERMELHA">Preta e Vermelha</option>
+                  </select>
                 </div>
                 <div className="flex gap-3">
                   <button 

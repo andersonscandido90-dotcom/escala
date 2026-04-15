@@ -6,7 +6,8 @@ import {
   startOfDay, 
   isAfter,
   getHours,
-  getMinutes
+  getMinutes,
+  isWeekend
 } from 'date-fns';
 import { 
   Military, 
@@ -14,7 +15,8 @@ import {
   ShipPeriod, 
   ManualSwap, 
   RosterEntry, 
-  StatusType 
+  StatusType,
+  RosterModel
 } from '../types';
 
 const STATUS_IMPEDITIVOS: StatusType[] = ['CURSO', 'FERIAS', 'DISPENSA_MEDICA', 'PATERNIDADE', 'LUTO'];
@@ -87,12 +89,32 @@ export function generateRoster(
   statusPeriods: StatusPeriod[],
   shipPeriods: ShipPeriod[],
   manualSwaps: ManualSwap[],
-  acompDuration: number = 3
+  acompDuration: number = 3,
+  model: RosterModel = 'CORRIDA'
 ): RosterEntry[] {
   if (militares.length === 0) return [];
 
+  // Sort by antiguidade (1 = Antigo, higher = Moderno)
+  // We want to start with the "Mais Moderno", so we sort descending
+  const sortedMilitares = [...militares].sort((a, b) => b.antiguidade - a.antiguidade);
+
   const acompanhanteCounters = new Map<number, number>();
+  
+  // Indices for different models
   let nextIndex = 0;
+  let nextIndexPreta = 0;
+  let nextIndexVermelha = 0;
+
+  // QUARTOS state
+  const quarterMilitares: Record<number, Military[]> = {
+    1: sortedMilitares.filter(m => m.quarto === 1),
+    2: sortedMilitares.filter(m => m.quarto === 2),
+    3: sortedMilitares.filter(m => m.quarto === 3),
+    4: sortedMilitares.filter(m => m.quarto === 4),
+  };
+  const quarterIndices: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0 };
+  let quarterRotationIdx = 0;
+  const rotationOrder = [4, 3, 2, 1];
 
   let frozenMilitary: Military | null = null;
   let frozenAcompanhante: Military | null = null;
@@ -111,6 +133,7 @@ export function generateRoster(
   for (let d = 0; d < days; d++) {
     const dateStr = format(currentDate, 'yyyy-MM-dd');
     const shipStatus = getShipStatus(dateStr, shipPeriods);
+    const isVermelha = isWeekend(currentDate);
 
     if (frozenMilitary && frozenPeriod) {
       const endDay = startOfDay(parseISO(frozenPeriod.end));
@@ -132,10 +155,29 @@ export function generateRoster(
     // SERVICO ESTENDIDO
     if (shipStatus.type === 'SERVICO_ESTENDIDO') {
       if (shipStatus.phase === 'inicio' && !frozenMilitary) {
-        const result = findNextTitular(dateStr, nextIndex, militares, statusPeriods);
-        if (result.titular) {
-          frozenMilitary = result.titular;
-          nextIndex = result.newIndex;
+        let titular: Military | null = null;
+
+        if (model === 'PRETA_VERMELHA') {
+          const res = findNextTitular(dateStr, isVermelha ? nextIndexVermelha : nextIndexPreta, sortedMilitares, statusPeriods);
+          titular = res.titular;
+          if (isVermelha) nextIndexVermelha = res.newIndex;
+          else nextIndexPreta = res.newIndex;
+        } else if (model === 'QUARTOS') {
+          const qNum = rotationOrder[quarterRotationIdx % 4];
+          const qList = quarterMilitares[qNum] || [];
+          const qIdx = quarterIndices[qNum] || 0;
+          const res = findNextTitular(dateStr, qIdx, qList, statusPeriods);
+          titular = res.titular;
+          if (titular) quarterIndices[qNum] = res.newIndex;
+          quarterRotationIdx++;
+        } else {
+          const res = findNextTitular(dateStr, nextIndex, sortedMilitares, statusPeriods);
+          titular = res.titular;
+          nextIndex = res.newIndex;
+        }
+
+        if (titular) {
+          frozenMilitary = titular;
           const acomp = chooseAcompanhante(dateStr, militares, statusPeriods, acompanhanteCounters, frozenMilitary.id, acompDuration);
           frozenAcompanhante = acomp;
           frozenPeriod = shipStatus.period;
@@ -168,13 +210,32 @@ export function generateRoster(
     }
 
     // NORMAL DAY
-    const result = findNextTitular(dateStr, nextIndex, militares, statusPeriods);
-    if (result.titular) {
-      const acomp = chooseAcompanhante(dateStr, militares, statusPeriods, acompanhanteCounters, result.titular.id, acompDuration);
-      nextIndex = result.newIndex;
+    let titular: Military | null = null;
+
+    if (model === 'PRETA_VERMELHA') {
+      const res = findNextTitular(dateStr, isVermelha ? nextIndexVermelha : nextIndexPreta, sortedMilitares, statusPeriods);
+      titular = res.titular;
+      if (isVermelha) nextIndexVermelha = res.newIndex;
+      else nextIndexPreta = res.newIndex;
+    } else if (model === 'QUARTOS') {
+      const qNum = rotationOrder[quarterRotationIdx % 4];
+      const qList = quarterMilitares[qNum] || [];
+      const qIdx = quarterIndices[qNum] || 0;
+      const res = findNextTitular(dateStr, qIdx, qList, statusPeriods);
+      titular = res.titular;
+      if (titular) quarterIndices[qNum] = res.newIndex;
+      quarterRotationIdx++;
+    } else {
+      const res = findNextTitular(dateStr, nextIndex, sortedMilitares, statusPeriods);
+      titular = res.titular;
+      nextIndex = res.newIndex;
+    }
+
+    if (titular) {
+      const acomp = chooseAcompanhante(dateStr, militares, statusPeriods, acompanhanteCounters, titular.id, acompDuration);
       roster.push({
         data: dateStr,
-        militaryId: result.titular.id,
+        militaryId: titular.id,
         acompanhanteId: acomp ? acomp.id : null,
         status: 'SERVICO',
         emNavio: false
@@ -253,10 +314,8 @@ function applyManualSwaps(baseRoster: RosterEntry[], manualSwaps: ManualSwap[]):
 
     if (swap.type === 'substituir') {
       entry.militaryId = newId;
-      // If the new person was the companion, remove them from companion spot
       if (entry.acompanhanteId === newId) entry.acompanhanteId = null;
     } else if (swap.type === 'troca') {
-      // Only swap if the current day has a military assigned
       if (oldId === null) {
         entry.militaryId = newId;
         continue;
@@ -264,19 +323,12 @@ function applyManualSwaps(baseRoster: RosterEntry[], manualSwaps: ManualSwap[]):
 
       entry.militaryId = newId;
       
-      // Find the next time the new person was supposed to serve and give it to the old person
-      let swapped = false;
       for (const [data, e] of rosterMap) {
-        // Must be after the current swap date and must be the new person's service
         if (isAfter(parseISO(data), parseISO(swap.data)) && e.militaryId === newId) {
           e.militaryId = oldId;
-          swapped = true;
           break;
         }
       }
-
-      // If no future service was found for the new person, it effectively becomes a substitution
-      // but we keep the oldId in mind for future roster generations if needed (not applicable here)
     }
   }
   

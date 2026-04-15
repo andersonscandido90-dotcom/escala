@@ -9,9 +9,13 @@ export type StatusType =
   | 'INDISPONIVEL'
   | 'SERVICO';
 
+export type RosterModel = 'CORRIDA' | 'QUARTOS' | 'PRETA_VERMELHA';
+
 export interface Military {
   id: number;
   name: string;
+  quarto?: number; // 1, 2, 3, 4
+  antiguidade: number; // 1 = Mais Antigo, higher = Mais Moderno
 }
 
 export interface StatusPeriod {
