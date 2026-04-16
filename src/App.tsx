@@ -209,12 +209,11 @@ export default function App() {
     if (titularEntry) {
       setModal({ type: 'CHOICE', date, rowMilitaryId, shift: titularEntry.shift });
     } else {
-      const activeEntries = dayEntries.filter(e => e.militaryId !== null);
-      if (activeEntries.length > 1) {
+      if (dayEntries.length > 1) {
         setModal({ type: 'SELECT_TITULAR_TO_REPLACE', date, rowMilitaryId, newId: rowMilitaryId });
       } else {
-        const titularId = activeEntries[0]?.militaryId || 0;
-        const shift = activeEntries[0]?.shift;
+        const titularId = dayEntries[0]?.militaryId || 0;
+        const shift = dayEntries[0]?.shift;
         setModal({ 
           type: 'CONFIRM_ASSIGN', 
           date, 
@@ -526,91 +525,144 @@ export default function App() {
               <br />
               Data: <span className="text-accent">{format(parseISO(modal.date), 'dd/MM/yyyy')}</span>
             </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <button 
+                onClick={() => setModal({ ...modal, type: 'SELECT_NEW', oldId: modal.rowMilitaryId, swapType: 'substituir' })}
+                className="p-5 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-4 hover:bg-white/10 hover:border-accent/50 transition-all group text-left"
+              >
+                <div className="p-3 bg-bg-main rounded-xl border border-white/5 group-hover:text-accent transition-colors shadow-lg">
+                  <UserPlus className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="font-display font-black text-text-main text-base tracking-tight leading-tight">Substituir</div>
+                  <div className="text-[9px] font-mono font-bold text-text-muted uppercase tracking-widest mt-1">Alteração pontual</div>
+                </div>
+              </button>
+              <button 
+                onClick={() => setModal({ ...modal, type: 'SELECT_NEW', oldId: modal.rowMilitaryId, swapType: 'troca' })}
+                className="p-5 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-4 hover:bg-white/10 hover:border-accent/50 transition-all group text-left"
+              >
+                <div className="p-3 bg-bg-main rounded-xl border border-white/5 group-hover:text-accent transition-colors shadow-lg">
+                  <ArrowRightLeft className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="font-display font-black text-text-main text-base tracking-tight leading-tight">Permutar</div>
+                  <div className="text-[9px] font-mono font-bold text-text-muted uppercase tracking-widest mt-1">Troca bilateral</div>
+                </div>
+              </button>
+            </div>
+
             <button 
-              onClick={() => setModal({ ...modal, type: 'SELECT_NEW', oldId: modal.rowMilitaryId, swapType: 'substituir' })}
-              className="w-full p-5 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-5 hover:bg-white/10 hover:border-accent/50 transition-all group text-left"
+              onClick={() => setModal({ ...modal, type: 'SELECT_SPECIFIC_SHIFT' })}
+              className="w-full p-5 bg-accent/5 border border-accent/20 rounded-2xl flex items-center gap-5 hover:bg-accent/10 hover:border-accent/50 transition-all group text-left"
             >
-              <div className="p-3 bg-bg-main rounded-xl border border-white/5 group-hover:text-accent transition-colors shadow-lg">
-                <UserPlus className="w-5 h-5" />
+              <div className="p-3 bg-accent/20 rounded-xl border border-accent/20 text-accent transition-colors shadow-lg">
+                <Timer className="w-5 h-5" />
               </div>
-              <div>
-                <div className="font-display font-black text-text-main text-lg tracking-tight">Substituir Operador</div>
-                <div className="text-[10px] font-mono font-bold text-text-muted uppercase tracking-widest">Alteração pontual de serviço</div>
+              <div className="flex-1">
+                <div className="font-display font-black text-accent text-lg tracking-tight">Alterar Horário de Turno</div>
+                <div className="text-[10px] font-mono font-bold text-accent/80 uppercase tracking-widest leading-relaxed">Mudar para qualquer horário disponível</div>
               </div>
+              <ChevronRight className="w-5 h-5 text-accent/50 group-hover:translate-x-1 transition-transform" />
             </button>
-            <button 
-              onClick={() => setModal({ ...modal, type: 'SELECT_NEW', oldId: modal.rowMilitaryId, swapType: 'troca' })}
-              className="w-full p-5 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-5 hover:bg-white/10 hover:border-accent/50 transition-all group text-left"
-            >
-              <div className="p-3 bg-bg-main rounded-xl border border-white/5 group-hover:text-accent transition-colors shadow-lg">
-                <ArrowRightLeft className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="font-display font-black text-text-main text-lg tracking-tight">Permutar Escala</div>
-                <div className="text-[10px] font-mono font-bold text-text-muted uppercase tracking-widest">Troca bilateral de datas</div>
-              </div>
-            </button>
+
             {modal.shift && roster.filter(e => e.data === modal.date && e.militaryId !== null).length > 1 && (
               <button 
                 onClick={() => setModal({ ...modal, type: 'SELECT_SHIFT_SWAP' })}
-                className="w-full p-5 bg-accent/5 border border-accent/20 rounded-2xl flex items-center gap-5 hover:bg-accent/10 hover:border-accent/50 transition-all group text-left"
+                className="w-full p-5 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-5 hover:bg-white/10 hover:border-accent/50 transition-all group text-left"
               >
-                <div className="p-3 bg-accent/20 rounded-xl border border-accent/20 text-accent transition-colors shadow-lg">
-                  <Timer className="w-5 h-5" />
+                <div className="p-3 bg-bg-main rounded-xl border border-white/5 group-hover:text-accent transition-colors shadow-lg">
+                  <ArrowRightLeft className="w-5 h-5 rotate-90" />
                 </div>
                 <div>
-                  <div className="font-display font-black text-accent text-lg tracking-tight">Trocar Horário (Turno)</div>
-                  <div className="text-[10px] font-mono font-bold text-accent/80 uppercase tracking-widest">Trocar com outro militar do dia</div>
+                  <div className="font-display font-black text-text-main text-lg tracking-tight">Permutar com Colega do Dia</div>
+                  <div className="text-[10px] font-mono font-bold text-text-muted uppercase tracking-widest">Inverter horários internamente</div>
                 </div>
               </button>
             )}
           </div>
         )}
 
-        {modal?.type === 'SELECT_NEW' && (
+        {modal?.type === 'SELECT_SPECIFIC_SHIFT' && (
           <div className="flex flex-col gap-4">
-            <p className="label-tech mb-2">Selecione o Substituto</p>
-            <div className="max-h-[400px] overflow-y-auto flex flex-col gap-2 pr-2 custom-scrollbar">
-              {militares.filter(m => m.id !== modal.oldId).map((m, idx) => (
-                <button
-                  key={m.id}
-                  onClick={() => addSwap(modal.date, modal.oldId!, m.id, modal.swapType!, modal.shift)}
-                  className="w-full p-4 bg-white/5 border border-white/10 rounded-xl flex items-center gap-4 hover:bg-white/10 hover:border-accent/30 transition-all text-left group"
-                >
-                  <span className="text-[10px] bg-bg-main text-accent px-2.5 py-1 rounded-lg font-black border border-white/5 group-hover:brass-glow transition-all">
-                    {String(idx + 1).padStart(2, '0')}
-                  </span>
-                  <span className="font-display font-bold text-text-main tracking-tight">{m.name}</span>
-                </button>
-              ))}
+            <p className="label-tech mb-2">Mudar turno para:</p>
+            <div className="flex flex-col gap-2">
+              {['08:00 - 12:00', '12:00 - 16:00', '16:00 - 20:00'].map((s) => {
+                const isCurrent = s === modal.shift;
+                const occupantId = roster.find(e => e.data === modal.date && e.shift === s)?.militaryId;
+                const occupantName = occupantId ? militares.find(m => m.id === occupantId)?.name : 'VAGO';
+
+                return (
+                  <button
+                    key={s}
+                    disabled={isCurrent}
+                    onClick={() => {
+                      if (occupantId) {
+                        // SWAP between the two shifts
+                        const newManualSwaps = [
+                          ...manualSwaps,
+                          { data: modal.date, originalMilitaryId: modal.rowMilitaryId, newMilitaryId: occupantId, type: 'substituir', shift: modal.shift },
+                          { data: modal.date, originalMilitaryId: occupantId, newMilitaryId: modal.rowMilitaryId, type: 'substituir', shift: s }
+                        ];
+                        setManualSwaps(newManualSwaps as ManualSwap[]);
+                      } else {
+                        // MOVE to empty shift (using substituir targeting the original slot with null, and adding specific target if needed)
+                        // This logic depends on the generator, but for now we can treat it as a swap with null
+                        const newManualSwaps = [
+                          ...manualSwaps,
+                          { data: modal.date, originalMilitaryId: modal.rowMilitaryId, newMilitaryId: 0, type: 'substituir', shift: modal.shift },
+                          { data: modal.date, originalMilitaryId: 0, newMilitaryId: modal.rowMilitaryId, type: 'substituir', shift: s }
+                        ];
+                        setManualSwaps(newManualSwaps as ManualSwap[]);
+                      }
+                      setModal(null);
+                    }}
+                    className={cn(
+                      "w-full p-5 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-5 transition-all text-left",
+                      isCurrent ? "opacity-40 cursor-not-allowed" : "hover:bg-white/10 hover:border-accent/40"
+                    )}
+                  >
+                    <div className={cn("p-3 rounded-xl border border-white/5 shadow-lg", isCurrent ? "bg-white/10" : "bg-bg-main text-accent")}>
+                      <Timer className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="font-display font-black text-text-main text-lg tracking-tight">{s}</div>
+                      <div className="text-[10px] font-mono font-bold text-text-muted uppercase tracking-widest">
+                        {isCurrent ? '(Horário Atual)' : `Ocupante: ${occupantName}`}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
 
         {modal?.type === 'SELECT_TITULAR_TO_REPLACE' && (
           <div className="flex flex-col gap-4">
-            <p className="label-tech mb-2">Substituir qual turno?</p>
+            <p className="label-tech mb-2">Selecione o turno para assumir:</p>
             <div className="flex flex-col gap-2">
-              {roster.filter(e => e.data === modal.date && e.militaryId !== null).map((e) => (
+              {roster.filter(e => e.data === modal.date).map((e) => (
                 <button
                   key={e.shift}
                   onClick={() => setModal({
                     type: 'CONFIRM_ASSIGN',
                     date: modal.date,
                     rowMilitaryId: modal.rowMilitaryId,
-                    oldId: e.militaryId!,
+                    oldId: e.militaryId || 0,
                     newId: modal.newId!,
                     shift: e.shift
                   })}
-                  className="w-full p-5 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-5 hover:bg-white/10 transition-all text-left"
+                  className="w-full p-5 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-5 hover:bg-white/10 hover:border-accent/40 transition-all text-left"
                 >
                   <div className="p-3 bg-bg-main rounded-xl border border-white/5 text-accent shadow-lg">
                     <Timer className="w-5 h-5" />
                   </div>
                   <div>
-                    <div className="font-display font-black text-text-main text-lg tracking-tight">{e.shift || 'Serviço'}</div>
+                    <div className="font-display font-black text-text-main text-lg tracking-tight">{e.shift || 'Regime 24h'}</div>
                     <div className="text-[10px] font-mono font-bold text-text-muted uppercase tracking-widest">
-                      Atual: {militares.find(m => m.id === e.militaryId)?.name}
+                      Ocupante atual: {e.militaryId ? militares.find(m => m.id === e.militaryId)?.name : 'VAGO'}
                     </div>
                   </div>
                 </button>
