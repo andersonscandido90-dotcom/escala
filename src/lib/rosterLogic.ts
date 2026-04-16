@@ -90,7 +90,8 @@ export function generateRoster(
   shipPeriods: ShipPeriod[],
   manualSwaps: ManualSwap[],
   acompDuration: number = 3,
-  model: RosterModel = 'CORRIDA'
+  model: RosterModel = 'CORRIDA',
+  holidayDates: string[] = []
 ): RosterEntry[] {
   if (militares.length === 0) return [];
 
@@ -133,7 +134,7 @@ export function generateRoster(
   for (let d = 0; d < days; d++) {
     const dateStr = format(currentDate, 'yyyy-MM-dd');
     const shipStatus = getShipStatus(dateStr, shipPeriods);
-    const isVermelha = isWeekend(currentDate);
+    const isVermelha = isWeekend(currentDate) || holidayDates.includes(dateStr);
 
     if (frozenMilitary && frozenPeriod) {
       const endDay = startOfDay(parseISO(frozenPeriod.end));

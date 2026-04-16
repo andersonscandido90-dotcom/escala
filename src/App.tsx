@@ -27,7 +27,7 @@ import {
   STATUS_LABELS,
   RosterModel
 } from './types';
-import { generateRoster } from './lib/rosterLogic';
+import { generateRoster, getStatusAtivo } from './lib/rosterLogic';
 import { Dashboard } from './components/Dashboard';
 import { RosterTable } from './components/RosterTable';
 import { PersonnelManager } from './components/PersonnelManager';
@@ -50,6 +50,7 @@ export default function App() {
   const [manualSwaps, setManualSwaps] = useState<ManualSwap[]>([]);
   const [acompDuration, setAcompDuration] = useState(3);
   const [rosterModel, setRosterModel] = useState<RosterModel>('CORRIDA');
+  const [holidayDates, setHolidayDates] = useState<string[]>([]);
   const [config, setConfig] = useState({
     startDate: format(addDays(new Date(), 1), 'yyyy-MM-dd'),
     days: 30
@@ -81,6 +82,7 @@ export default function App() {
         setManualSwaps(data.manualSwaps || []);
         setAcompDuration(data.acompDuration || 3);
         setRosterModel(data.rosterModel || 'CORRIDA');
+        setHolidayDates(data.holidayDates || []);
         setNextIds(data.nextIds || { military: 1, status: 1, ship: 1 });
       } catch (e) {
         console.error('Error loading data', e);
@@ -107,9 +109,10 @@ export default function App() {
       manualSwaps,
       acompDuration,
       rosterModel,
+      holidayDates,
       nextIds
     }));
-  }, [militares, statusPeriods, shipPeriods, manualSwaps, acompDuration, rosterModel, nextIds]);
+  }, [militares, statusPeriods, shipPeriods, manualSwaps, acompDuration, rosterModel, holidayDates, nextIds]);
 
   // Generate Roster
   const roster = useMemo(() => {
@@ -121,11 +124,41 @@ export default function App() {
       shipPeriods,
       manualSwaps,
       acompDuration,
-      rosterModel
+      rosterModel,
+      holidayDates
     );
-  }, [config, militares, statusPeriods, shipPeriods, manualSwaps, acompDuration, rosterModel]);
+  }, [config, militares, statusPeriods, shipPeriods, manualSwaps, acompDuration, rosterModel, holidayDates]);
 
   // Handlers
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (activeTab !== 'roster') return;
+      
+      // Don't scroll if user is typing in an input or select
+      const activeElement = document.activeElement;
+      const isInput = activeElement instanceof HTMLInputElement || 
+                      activeElement instanceof HTMLTextAreaElement || 
+                      activeElement instanceof HTMLSelectElement;
+      
+      if (isInput) return;
+
+      const container = document.getElementById('roster-table-scroll');
+      if (!container) return;
+
+      const scrollAmount = 300;
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        container.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeTab]);
+
   const handleAddMilitary = (name: string, quarto: number = 1, antiguidade: number = 1) => {
     setMilitares([...militares, { id: nextIds.military, name, quarto, antiguidade }]);
     setNextIds({ ...nextIds, military: nextIds.military + 1 });
@@ -191,82 +224,37 @@ export default function App() {
   };
 
   const exportExcel = () => {
-    const ws = XLSX.utils.json_to_sheet(roster.map(e => ({
-      Data: e.data,
-      Militar: militares.find(m => m.id === e.militaryId)?.name || 'N/A',
-      Acompanhante: militares.find(m => m.id === e.acompanhanteId)?.name || 'N/A',
-      Status: e.status,
-      'Em Mar': e.emNavio ? 'Sim' : 'Não'
-    })));
+    // Create a matrix: first column is Military Name, subsequent columns are dates
+    const data = militares.map(m => {
+      const row: any = { 'Militar': m.name };
+      roster.forEach(entry => {
+        const isTitular = entry.militaryId === m.id;
+        const isAcomp = entry.acompanhanteId === m.id;
+        const status = getStatusAtivo(m.id, entry.data, statusPeriods);
+        
+        let cellValue = '—';
+        if (isTitular) cellValue = 'SERVIÇO' + (entry.emNavio ? ' (NAVIO)' : '');
+        else if (isAcomp) cellValue = 'ACOMP.';
+        else if (status) cellValue = STATUS_LABELS[status];
+        
+        const dateLabel = format(parseISO(entry.data), 'dd/MM');
+        row[dateLabel] = cellValue;
+      });
+      return row;
+    });
+
+    const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Escala');
     XLSX.writeFile(wb, `escala_${config.startDate}.xlsx`);
   };
 
-  const exportWeeklyPDF = async () => {
-    const element = document.getElementById('roster-table-container');
-    if (!element) return;
-
-    const { default: html2canvas } = await import('html2canvas');
-    const canvas = await html2canvas(element, {
-      scale: 2,
-      useCORS: true,
-      logging: false,
-      backgroundColor: '#ffffff'
-    });
-
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF({
-      orientation: 'landscape',
-      unit: 'mm',
-      format: 'a4'
-    });
-
-    const imgProps = pdf.getImageProperties(imgData);
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-
-    pdf.setFontSize(18);
-    pdf.setTextColor(37, 99, 235);
-    pdf.text('Escala de Serviço Semanal', 15, 15);
-    
-    pdf.setFontSize(10);
-    pdf.setTextColor(100, 116, 139);
-    pdf.text(`Período: ${format(parseISO(config.startDate), 'dd/MM/yyyy')} a ${format(addDays(parseISO(config.startDate), 6), 'dd/MM/yyyy')}`, 15, 22);
-
-    pdf.addImage(imgData, 'PNG', 10, 30, pdfWidth - 20, pdfHeight);
-
-    // Add Impediments section
-    const currentImpediments = statusPeriods.filter(p => {
-      const start = parseISO(p.start);
-      const end = parseISO(p.end);
-      const rosterStart = parseISO(config.startDate);
-      const rosterEnd = addDays(rosterStart, 7);
-      return (start <= rosterEnd && end >= rosterStart);
-    });
-
-    if (currentImpediments.length > 0) {
-      const startY = pdfHeight + 40;
-      pdf.setFontSize(14);
-      pdf.setTextColor(30, 41, 59);
-      pdf.text('Observações / Impedimentos do Período', 15, startY);
-
-      (pdf as any).autoTable({
-        startY: startY + 5,
-        head: [['Militar', 'Tipo', 'Início', 'Fim']],
-        body: currentImpediments.map(p => [
-          militares.find(m => m.id === p.militaryId)?.name || 'N/A',
-          STATUS_LABELS[p.type],
-          format(parseISO(p.start), 'dd/MM'),
-          format(parseISO(p.end), 'dd/MM')
-        ]),
-        theme: 'striped',
-        headStyles: { fillStyle: [37, 99, 235] },
-        margin: { left: 15, right: 15 }
-      });
-    }
-
-    pdf.save(`escala_semanal_${config.startDate}.pdf`);
+  const toggleHoliday = (date: string) => {
+    setHolidayDates(prev => 
+      prev.includes(date) 
+        ? prev.filter(d => d !== date) 
+        : [...prev, date]
+    );
   };
 
   return (
@@ -317,14 +305,6 @@ export default function App() {
             />
           </ul>
         </nav>
-
-        <div className="mt-auto pt-8 border-t border-white/5">
-          <div className="label-tech mb-2">Status da Missão</div>
-          <div className="flex items-center gap-2 text-[11px] text-emerald-400 font-bold animate-pulse-subtle">
-            <div className="w-2 h-2 bg-emerald-400 rounded-full brass-glow" />
-            OPERACIONAL
-          </div>
-        </div>
       </aside>
 
       {/* Main Content */}
@@ -344,15 +324,9 @@ export default function App() {
           <div className="flex items-center gap-4">
             <button 
               onClick={exportExcel}
-              className="px-5 py-2.5 bg-bg-main border border-white/10 rounded-xl text-xs font-bold text-text-main hover:bg-white/5 transition-all shadow-lg"
-            >
-              Exportar Dados
-            </button>
-            <button 
-              onClick={exportWeeklyPDF}
               className="px-5 py-2.5 bg-accent text-bg-main rounded-xl text-xs font-black hover:brightness-110 transition-all shadow-lg brass-glow"
             >
-              Gerar Relatório PDF
+              Exportar Escala Excel
             </button>
           </div>
         </header>
@@ -426,6 +400,7 @@ export default function App() {
                         setStatusPeriods([]);
                         setShipPeriods([]);
                         setManualSwaps([]);
+                        setHolidayDates([]);
                       }
                     }}
                     className="px-5 py-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-xs font-bold hover:bg-red-500/20 transition-all"
@@ -435,11 +410,22 @@ export default function App() {
                 </div>
               </div>
 
+              <div className="p-4 bg-accent/5 border border-accent/10 rounded-2xl flex items-center gap-4">
+                <div className="p-2 bg-accent/20 rounded-xl">
+                  <AlertCircle className="w-5 h-5 text-accent" />
+                </div>
+                <p className="text-xs text-text-muted font-bold uppercase tracking-wider leading-relaxed">
+                  <span className="text-accent">Dica:</span> Clique no cabeçalho das datas (ex: SEG 17/04) para alternar entre <span className="text-red-400">Escala Vermelha</span> (Feriados/Folgas) e Escala Preta.
+                </p>
+              </div>
+
               <RosterTable 
                 militares={militares} 
                 roster={roster} 
                 statusPeriods={statusPeriods}
+                holidayDates={holidayDates}
                 onCellClick={handleCellClick}
+                onHeaderClick={toggleHoliday}
               />
             </div>
           )}

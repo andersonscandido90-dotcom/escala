@@ -10,34 +10,42 @@ interface RosterTableProps {
   militares: Military[];
   roster: RosterEntry[];
   statusPeriods: StatusPeriod[];
+  holidayDates: string[];
   onCellClick: (date: string, rowMilitaryId: number) => void;
+  onHeaderClick?: (date: string) => void;
 }
 
 export const RosterTable: React.FC<RosterTableProps> = ({ 
   militares, 
   roster, 
   statusPeriods,
-  onCellClick 
+  holidayDates,
+  onCellClick,
+  onHeaderClick
 }) => {
   const dates = roster.map(e => e.data);
 
   return (
     <div id="roster-table-container" className="glass-panel rounded-[2rem] border border-white/5 shadow-2xl overflow-hidden">
-      <div className="overflow-x-auto custom-scrollbar">
+      <div id="roster-table-scroll" className="overflow-x-auto custom-scrollbar">
         <table className="w-full border-collapse text-sm font-mono">
-          <thead>
-            <tr className="bg-white/5 border-b border-white/5 text-text-main">
-              <th className="sticky left-0 z-20 bg-bg-card p-6 text-left border-r border-white/5 min-w-[240px]">
+          <thead className="sticky top-0 z-30 shadow-[0_1px_0_rgba(255,255,255,0.05)]">
+            <tr className="bg-bg-card border-b border-white/5 text-text-main">
+              <th className="sticky top-0 left-0 z-40 bg-bg-card p-6 text-left border-r border-white/5 min-w-[240px] shadow-[1px_1px_0_rgba(255,255,255,0.05)]">
                 <div className="label-tech">Operador / Militar</div>
               </th>
               {dates.map(date => {
                 const d = parseISO(date);
-                const isVerm = isWeekend(d);
+                const isVerm = isWeekend(d) || holidayDates.includes(date);
                 return (
-                  <th key={date} className={cn(
-                    "p-4 text-center min-w-[120px] border-r border-white/5 transition-colors",
-                    isVerm && "bg-red-500/5"
-                  )}>
+                  <th 
+                    key={date} 
+                    onClick={() => onHeaderClick?.(date)}
+                    className={cn(
+                      "sticky top-0 z-30 p-4 text-center min-w-[120px] border-r border-white/5 transition-colors cursor-pointer hover:bg-white/10 bg-bg-card",
+                      isVerm && "bg-red-500/5"
+                    )}
+                  >
                     <div className={cn(
                       "text-[10px] font-bold uppercase tracking-widest mb-1",
                       isVerm ? "text-red-400" : "text-accent"
@@ -75,7 +83,7 @@ export const RosterTable: React.FC<RosterTableProps> = ({
                   const isTitular = entry?.militaryId === m.id;
                   const isAcompanhante = entry?.acompanhanteId === m.id;
                   const isNavioPausa = entry?.status === 'NAVIO';
-                  const isVerm = isWeekend(parseISO(dateStr));
+                  const isVerm = isWeekend(parseISO(dateStr)) || holidayDates.includes(dateStr);
 
                   let content = null;
                   let cellClass = "p-4 text-center border-r border-white/5 min-h-[80px] transition-all";
