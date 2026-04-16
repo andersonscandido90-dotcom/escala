@@ -233,19 +233,23 @@ export default function App() {
 
   const exportExcel = () => {
     // Create a matrix: first column is Military Name, subsequent columns are dates
+    const dates = (Array.from(new Set(roster.map(e => e.data))).sort()) as string[];
+    
     const data = militares.map(m => {
       const row: any = { 'Militar': m.name };
-      roster.forEach(entry => {
-        const isTitular = entry.militaryId === m.id;
-        const isAcomp = entry.acompanhanteId === m.id;
-        const status = getStatusAtivo(m.id, entry.data, statusPeriods);
+      dates.forEach(date => {
+        const dayEntries = roster.filter(e => e.data === date);
+        const entry = dayEntries.find(e => e.militaryId === m.id) || dayEntries[0];
+        const isTitular = dayEntries.some(e => e.militaryId === m.id);
+        const isAcomp = dayEntries.some(e => e.acompanhanteId === m.id);
+        const status = getStatusAtivo(m.id, date, statusPeriods);
         
         let cellValue = '—';
         if (isTitular) cellValue = 'SERVIÇO' + (entry.emNavio ? ' (NAVIO)' : '');
         else if (isAcomp) cellValue = 'ACOMP.';
         else if (status) cellValue = STATUS_LABELS[status];
         
-        const dateLabel = format(parseISO(entry.data), 'dd/MM');
+        const dateLabel = format(parseISO(date), 'dd/MM');
         row[dateLabel] = cellValue;
       });
       return row;
@@ -390,9 +394,21 @@ export default function App() {
                     onChange={(e) => setRosterModel(e.target.value as RosterModel)}
                     className="bg-bg-main border border-white/10 rounded-xl px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main"
                   >
-                    <option value="CORRIDA">Escala Corrida</option>
-                    <option value="QUARTOS">Escala por Quartos</option>
-                    <option value="PRETA_VERMELHA">Preta e Vermelha</option>
+                    <optgroup label="Escala Corrida">
+                      <option value="CORRIDA">Corrida (1/dia)</option>
+                      <option value="CORRIDA_2">Corrida (2/dia)</option>
+                      <option value="CORRIDA_3">Corrida (3/dia)</option>
+                    </optgroup>
+                    <optgroup label="Escala por Quartos">
+                      <option value="QUARTOS">Quartos (1/dia)</option>
+                      <option value="QUARTOS_2">Quartos (2/dia)</option>
+                      <option value="QUARTOS_3">Quartos (3/dia)</option>
+                    </optgroup>
+                    <optgroup label="Preta e Vermelha">
+                      <option value="PRETA_VERMELHA">Preta e Vermelha (1/dia)</option>
+                      <option value="PRETA_VERMELHA_2">Preta e Vermelha (2/dia)</option>
+                      <option value="PRETA_VERMELHA_3">Preta e Vermelha (3/dia)</option>
+                    </optgroup>
                   </select>
                 </div>
                 <div className="flex gap-3">

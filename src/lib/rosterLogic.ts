@@ -95,18 +95,22 @@ export function generateRoster(
 ): RosterEntry[] {
   if (militares.length === 0) return [];
 
+  // Determine count per day from model
+  let countPerDay = 1;
+  if (model.endsWith('_2')) countPerDay = 2;
+  if (model.endsWith('_3')) countPerDay = 3;
+
+  const baseModel = model.replace(/_2$|_3$/, '') as 'CORRIDA' | 'QUARTOS' | 'PRETA_VERMELHA';
+
   // Sort by antiguidade (1 = Antigo, higher = Moderno)
-  // We want to start with the "Mais Moderno", so we sort descending
   const sortedMilitares = [...militares].sort((a, b) => b.antiguidade - a.antiguidade);
 
   const acompanhanteCounters = new Map<number, number>();
   
-  // Indices for different models
   let nextIndex = 0;
   let nextIndexPreta = 0;
   let nextIndexVermelha = 0;
 
-  // QUARTOS state
   const quarterMilitares: Record<number, Military[]> = {
     1: sortedMilitares.filter(m => m.quarto === 1),
     2: sortedMilitares.filter(m => m.quarto === 2),
@@ -117,14 +121,13 @@ export function generateRoster(
   let quarterRotationIdx = 0;
   const rotationOrder = [4, 3, 2, 1];
 
-  let frozenMilitary: Military | null = null;
-  let frozenAcompanhante: Military | null = null;
+  let frozenMilitaries: Military[] = [];
+  let frozenAcompanhantes: (Military | null)[] = [];
   let frozenPeriod: ShipPeriod | null = null;
 
   const roster: RosterEntry[] = [];
   let currentDate = parseISO(startDate);
 
-  // Initialize counters for those who are "ACOMPANHANDO"
   militares.forEach(m => {
     if (getStatusAtivo(m.id, startDate, statusPeriods) === 'ACOMPANHANDO') {
       acompanhanteCounters.set(m.id, 0);
@@ -136,16 +139,15 @@ export function generateRoster(
     const shipStatus = getShipStatus(dateStr, shipPeriods);
     const isVermelha = isWeekend(currentDate) || holidayDates.includes(dateStr);
 
-    if (frozenMilitary && frozenPeriod) {
+    if (frozenMilitaries.length > 0 && frozenPeriod) {
       const endDay = startOfDay(parseISO(frozenPeriod.end));
       if (isAfter(currentDate, endDay)) {
-        frozenMilitary = null;
-        frozenAcompanhante = null;
+        frozenMilitaries = [];
+        frozenAcompanhantes = [];
         frozenPeriod = null;
       }
     }
 
-    // PAUSA TOTAL
     if (shipStatus.type === 'PAUSA_TOTAL') {
       roster.push({ data: dateStr, militaryId: null, acompanhanteId: null, status: 'NAVIO', emNavio: true });
       incrementAcompanhanteCounters(dateStr, militares, statusPeriods, acompanhanteCounters);
@@ -153,53 +155,43 @@ export function generateRoster(
       continue;
     }
 
-    // SERVICO ESTENDIDO
     if (shipStatus.type === 'SERVICO_ESTENDIDO') {
-      if (shipStatus.phase === 'inicio' && !frozenMilitary) {
-        let titular: Military | null = null;
+      if (shipStatus.phase === 'inicio' && frozenMilitaries.length === 0) {
+        for (let i = 0; i < countPerDay; i++) {
+          let titular: Military | null = null;
+          if (baseModel === 'PRETA_VERMELHA') {
+            const res = findNextTitular(dateStr, isVermelha ? nextIndexVermelha : nextIndexPreta, sortedMilitares, statusPeriods, frozenMilitaries.map(m => m.id));
+            titular = res.titular;
+            if (isVermelha) nextIndexVermelha = res.newIndex;
+            else nextIndexPreta = res.newIndex;
+          } else if (baseModel === 'QUARTOS') {
+            const qNum = rotationOrder[quarterRotationIdx % 4];
+            const qList = quarterMilitares[qNum] || [];
+            const qIdx = quarterIndices[qNum] || 0;
+            const res = findNextTitular(dateStr, qIdx, qList, statusPeriods, frozenMilitaries.map(m => m.id));
+            titular = res.titular;
+            if (titular) quarterIndices[qNum] = res.newIndex;
+          } else {
+            const res = findNextTitular(dateStr, nextIndex, sortedMilitares, statusPeriods, frozenMilitaries.map(m => m.id));
+            titular = res.titular;
+            nextIndex = res.newIndex;
+          }
 
-        if (model === 'PRETA_VERMELHA') {
-          const res = findNextTitular(dateStr, isVermelha ? nextIndexVermelha : nextIndexPreta, sortedMilitares, statusPeriods);
-          titular = res.titular;
-          if (isVermelha) nextIndexVermelha = res.newIndex;
-          else nextIndexPreta = res.newIndex;
-        } else if (model === 'QUARTOS') {
-          const qNum = rotationOrder[quarterRotationIdx % 4];
-          const qList = quarterMilitares[qNum] || [];
-          const qIdx = quarterIndices[qNum] || 0;
-          const res = findNextTitular(dateStr, qIdx, qList, statusPeriods);
-          titular = res.titular;
-          if (titular) quarterIndices[qNum] = res.newIndex;
-          quarterRotationIdx++;
-        } else {
-          const res = findNextTitular(dateStr, nextIndex, sortedMilitares, statusPeriods);
-          titular = res.titular;
-          nextIndex = res.newIndex;
+          if (titular) {
+            frozenMilitaries.push(titular);
+            const acomp = chooseAcompanhante(dateStr, militares, statusPeriods, acompanhanteCounters, titular.id, acompDuration);
+            frozenAcompanhantes.push(acomp);
+            frozenPeriod = shipStatus.period;
+            roster.push({ data: dateStr, militaryId: titular.id, acompanhanteId: acomp ? acomp.id : null, status: 'SERVICO', emNavio: true });
+          }
         }
-
-        if (titular) {
-          frozenMilitary = titular;
-          const acomp = chooseAcompanhante(dateStr, militares, statusPeriods, acompanhanteCounters, frozenMilitary.id, acompDuration);
-          frozenAcompanhante = acomp;
-          frozenPeriod = shipStatus.period;
-
-          roster.push({
-            data: dateStr,
-            militaryId: frozenMilitary.id,
-            acompanhanteId: acomp ? acomp.id : null,
-            status: 'SERVICO',
-            emNavio: true
-          });
-        } else {
+        if (baseModel === 'QUARTOS') quarterRotationIdx++;
+        if (frozenMilitaries.length === 0) {
           roster.push({ data: dateStr, militaryId: null, acompanhanteId: null, status: 'INDISPONIVEL', emNavio: true });
         }
-      } else if (frozenMilitary) {
-        roster.push({
-          data: dateStr,
-          militaryId: frozenMilitary.id,
-          acompanhanteId: frozenAcompanhante ? frozenAcompanhante.id : null,
-          status: 'SERVICO',
-          emNavio: true
+      } else if (frozenMilitaries.length > 0) {
+        frozenMilitaries.forEach((m, idx) => {
+          roster.push({ data: dateStr, militaryId: m.id, acompanhanteId: frozenAcompanhantes[idx]?.id || null, status: 'SERVICO', emNavio: true });
         });
       } else {
         roster.push({ data: dateStr, militaryId: null, acompanhanteId: null, status: 'INDISPONIVEL', emNavio: true });
@@ -211,37 +203,35 @@ export function generateRoster(
     }
 
     // NORMAL DAY
-    let titular: Military | null = null;
+    const dayTitulars: Military[] = [];
+    for (let i = 0; i < countPerDay; i++) {
+      let titular: Military | null = null;
+      if (baseModel === 'PRETA_VERMELHA') {
+        const res = findNextTitular(dateStr, isVermelha ? nextIndexVermelha : nextIndexPreta, sortedMilitares, statusPeriods, dayTitulars.map(m => m.id));
+        titular = res.titular;
+        if (isVermelha) nextIndexVermelha = res.newIndex;
+        else nextIndexPreta = res.newIndex;
+      } else if (baseModel === 'QUARTOS') {
+        const qNum = rotationOrder[quarterRotationIdx % 4];
+        const qList = quarterMilitares[qNum] || [];
+        const qIdx = quarterIndices[qNum] || 0;
+        const res = findNextTitular(dateStr, qIdx, qList, statusPeriods, dayTitulars.map(m => m.id));
+        titular = res.titular;
+        if (titular) quarterIndices[qNum] = res.newIndex;
+      } else {
+        const res = findNextTitular(dateStr, nextIndex, sortedMilitares, statusPeriods, dayTitulars.map(m => m.id));
+        titular = res.titular;
+        nextIndex = res.newIndex;
+      }
 
-    if (model === 'PRETA_VERMELHA') {
-      const res = findNextTitular(dateStr, isVermelha ? nextIndexVermelha : nextIndexPreta, sortedMilitares, statusPeriods);
-      titular = res.titular;
-      if (isVermelha) nextIndexVermelha = res.newIndex;
-      else nextIndexPreta = res.newIndex;
-    } else if (model === 'QUARTOS') {
-      const qNum = rotationOrder[quarterRotationIdx % 4];
-      const qList = quarterMilitares[qNum] || [];
-      const qIdx = quarterIndices[qNum] || 0;
-      const res = findNextTitular(dateStr, qIdx, qList, statusPeriods);
-      titular = res.titular;
-      if (titular) quarterIndices[qNum] = res.newIndex;
-      quarterRotationIdx++;
-    } else {
-      const res = findNextTitular(dateStr, nextIndex, sortedMilitares, statusPeriods);
-      titular = res.titular;
-      nextIndex = res.newIndex;
+      if (titular) {
+        dayTitulars.push(titular);
+        const acomp = chooseAcompanhante(dateStr, militares, statusPeriods, acompanhanteCounters, titular.id, acompDuration);
+        roster.push({ data: dateStr, militaryId: titular.id, acompanhanteId: acomp ? acomp.id : null, status: 'SERVICO', emNavio: false });
+      }
     }
-
-    if (titular) {
-      const acomp = chooseAcompanhante(dateStr, militares, statusPeriods, acompanhanteCounters, titular.id, acompDuration);
-      roster.push({
-        data: dateStr,
-        militaryId: titular.id,
-        acompanhanteId: acomp ? acomp.id : null,
-        status: 'SERVICO',
-        emNavio: false
-      });
-    } else {
+    if (baseModel === 'QUARTOS') quarterRotationIdx++;
+    if (dayTitulars.length === 0) {
       roster.push({ data: dateStr, militaryId: null, acompanhanteId: null, status: 'INDISPONIVEL', emNavio: false });
     }
 
@@ -252,12 +242,12 @@ export function generateRoster(
   return applyManualSwaps(roster, manualSwaps);
 }
 
-function findNextTitular(dateStr: string, startIndex: number, militares: Military[], statusPeriods: StatusPeriod[]) {
+function findNextTitular(dateStr: string, startIndex: number, militares: Military[], statusPeriods: StatusPeriod[], alreadyPickedIds: number[] = []) {
   let idx = startIndex;
   let attempts = 0;
   while (attempts < militares.length) {
     const candidate = militares[idx];
-    if (!isMilitaryImpeded(candidate.id, dateStr, statusPeriods)) {
+    if (!isMilitaryImpeded(candidate.id, dateStr, statusPeriods) && !alreadyPickedIds.includes(candidate.id)) {
       const newIndex = (idx + 1) % militares.length;
       return { titular: candidate, newIndex };
     }
@@ -304,12 +294,13 @@ function incrementAcompanhanteCounters(
 }
 
 function applyManualSwaps(baseRoster: RosterEntry[], manualSwaps: ManualSwap[]): RosterEntry[] {
-  const rosterMap = new Map(baseRoster.map(e => [e.data, { ...e }]));
+  const workingRoster = baseRoster.map(e => ({ ...e }));
   
   for (const swap of manualSwaps) {
-    const entry = rosterMap.get(swap.data);
-    if (!entry) continue;
+    const entryIndex = workingRoster.findIndex(e => e.data === swap.data && e.militaryId === swap.originalMilitaryId);
+    if (entryIndex === -1) continue;
 
+    const entry = workingRoster[entryIndex];
     const oldId = entry.militaryId;
     const newId = swap.newMilitaryId;
 
@@ -324,8 +315,9 @@ function applyManualSwaps(baseRoster: RosterEntry[], manualSwaps: ManualSwap[]):
 
       entry.militaryId = newId;
       
-      for (const [data, e] of rosterMap) {
-        if (isAfter(parseISO(data), parseISO(swap.data)) && e.militaryId === newId) {
+      for (let i = 0; i < workingRoster.length; i++) {
+        const e = workingRoster[i];
+        if (isAfter(parseISO(e.data), parseISO(swap.data)) && e.militaryId === newId) {
           e.militaryId = oldId;
           break;
         }
@@ -333,5 +325,5 @@ function applyManualSwaps(baseRoster: RosterEntry[], manualSwaps: ManualSwap[]):
     }
   }
   
-  return Array.from(rosterMap.values());
+  return workingRoster;
 }

@@ -9,7 +9,10 @@ export type StatusType =
   | 'INDISPONIVEL'
   | 'SERVICO';
 
-export type RosterModel = 'CORRIDA' | 'QUARTOS' | 'PRETA_VERMELHA';
+export type RosterModel = 
+  | 'CORRIDA' | 'CORRIDA_2' | 'CORRIDA_3' 
+  | 'QUARTOS' | 'QUARTOS_2' | 'QUARTOS_3' 
+  | 'PRETA_VERMELHA' | 'PRETA_VERMELHA_2' | 'PRETA_VERMELHA_3';
 
 export interface Military {
   id: number;

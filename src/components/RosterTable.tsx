@@ -23,7 +23,7 @@ export const RosterTable: React.FC<RosterTableProps> = ({
   onCellClick,
   onHeaderClick
 }) => {
-  const dates = roster.map(e => e.data);
+  const dates = (Array.from(new Set(roster.map(e => e.data))).sort()) as string[];
 
   return (
     <div id="roster-table-container" className="glass-panel rounded-[2rem] border border-white/5 shadow-2xl overflow-hidden">
@@ -78,11 +78,12 @@ export const RosterTable: React.FC<RosterTableProps> = ({
                   </div>
                 </td>
                 {dates.map(dateStr => {
-                  const entry = roster.find(e => e.data === dateStr);
+                  const dayEntries = roster.filter(e => e.data === dateStr);
+                  const entry = dayEntries.find(e => e.militaryId === m.id) || dayEntries[0];
                   const statusAtivo = getStatusAtivo(m.id, dateStr, statusPeriods);
-                  const isTitular = entry?.militaryId === m.id;
-                  const isAcompanhante = entry?.acompanhanteId === m.id;
-                  const isNavioPausa = entry?.status === 'NAVIO';
+                  const isTitular = dayEntries.some(e => e.militaryId === m.id);
+                  const isAcompanhante = dayEntries.some(e => e.acompanhanteId === m.id);
+                  const isNavioPausa = dayEntries.every(e => e.status === 'NAVIO');
                   const isVerm = isWeekend(parseISO(dateStr)) || holidayDates.includes(dateStr);
 
                   let content = null;
