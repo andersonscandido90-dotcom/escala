@@ -266,7 +266,7 @@ export default function App() {
             NAM ATLÂNTICO
           </div>
           <div className="text-[10px] font-mono font-bold tracking-[0.3em] text-text-muted">
-            A140 • SUPERVISÃO
+            A140 • Escala Bizurada
           </div>
         </div>
 
@@ -301,7 +301,7 @@ export default function App() {
               active={activeTab === 'ship'} 
               onClick={() => setActiveTab('ship')} 
               icon={<Ship className="w-4 h-4" />} 
-              label="Missões no Mar" 
+              label="Dias de Mar" 
             />
           </ul>
         </nav>
@@ -317,7 +317,7 @@ export default function App() {
               {activeTab === 'dashboard' ? 'Painel de Controle' : 
                activeTab === 'roster' ? 'Escala de Serviço' : 
                activeTab === 'personnel' ? 'Quadro de Militares' : 
-               activeTab === 'status' ? 'Status e Impedimentos' : 'Missões no Mar'}
+               activeTab === 'status' ? 'Status e Impedimentos' : 'Dias de Mar'}
             </h1>
           </div>
 
