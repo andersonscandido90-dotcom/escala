@@ -84,6 +84,12 @@ export default function App() {
         setRosterModel(data.rosterModel || 'CORRIDA');
         setHolidayDates(data.holidayDates || []);
         setNextIds(data.nextIds || { military: 1, status: 1, ship: 1 });
+        if (data.config) {
+          setConfig(data.config);
+        }
+        if (data.activeTab) {
+          setActiveTab(data.activeTab);
+        }
       } catch (e) {
         console.error('Error loading data', e);
       }
@@ -110,9 +116,11 @@ export default function App() {
       acompDuration,
       rosterModel,
       holidayDates,
-      nextIds
+      nextIds,
+      config,
+      activeTab
     }));
-  }, [militares, statusPeriods, shipPeriods, manualSwaps, acompDuration, rosterModel, holidayDates, nextIds]);
+  }, [militares, statusPeriods, shipPeriods, manualSwaps, acompDuration, rosterModel, holidayDates, nextIds, config, activeTab]);
 
   // Generate Roster
   const roster = useMemo(() => {
@@ -266,7 +274,7 @@ export default function App() {
             NAM ATLÂNTICO
           </div>
           <div className="text-[10px] font-mono font-bold tracking-[0.3em] text-text-muted">
-            A140 • Escala Bizurada
+            A140 • SUPERVISÃO
           </div>
         </div>
 
@@ -301,7 +309,7 @@ export default function App() {
               active={activeTab === 'ship'} 
               onClick={() => setActiveTab('ship')} 
               icon={<Ship className="w-4 h-4" />} 
-              label="Dias de Mar" 
+              label="Missões no Mar" 
             />
           </ul>
         </nav>
@@ -317,7 +325,7 @@ export default function App() {
               {activeTab === 'dashboard' ? 'Painel de Controle' : 
                activeTab === 'roster' ? 'Escala de Serviço' : 
                activeTab === 'personnel' ? 'Quadro de Militares' : 
-               activeTab === 'status' ? 'Status e Impedimentos' : 'Dias de Mar'}
+               activeTab === 'status' ? 'Status e Impedimentos' : 'Missões no Mar'}
             </h1>
           </div>
 
