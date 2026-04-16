@@ -102,6 +102,11 @@ export const RosterTable: React.FC<RosterTableProps> = ({
                           <span className={cn("text-accent", isVerm && "text-red-400")}>SERV</span> 
                           {entry?.emNavio && <Ship className="w-3.5 h-3.5 text-white" />}
                         </div>
+                        {entry?.shift && (
+                          <div className="text-[8px] font-mono font-bold text-white/90 bg-black/20 px-1.5 py-0.5 rounded border border-white/5">
+                            {entry.shift}
+                          </div>
+                        )}
                         {entry?.acompanhanteId && (
                           <div className="text-[9px] font-bold opacity-90 truncate max-w-full bg-white/10 px-2 py-0.5 rounded-full">
                             + {militares.find(mil => mil.id === entry.acompanhanteId)?.name.split(' ')[0]}

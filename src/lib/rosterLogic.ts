@@ -20,6 +20,7 @@ import {
 } from '../types';
 
 const STATUS_IMPEDITIVOS: StatusType[] = ['CURSO', 'FERIAS', 'DISPENSA_MEDICA', 'PATERNIDADE', 'LUTO'];
+const SHIFTS = ['08:00 - 12:00', '12:00 - 16:00', '16:00 - 20:00'];
 
 export function getStatusAtivo(militaryId: number, dateStr: string, statusPeriods: StatusPeriod[]): StatusType | null {
   const date = parseISO(dateStr);
@@ -182,7 +183,14 @@ export function generateRoster(
             const acomp = chooseAcompanhante(dateStr, militares, statusPeriods, acompanhanteCounters, titular.id, acompDuration);
             frozenAcompanhantes.push(acomp);
             frozenPeriod = shipStatus.period;
-            roster.push({ data: dateStr, militaryId: titular.id, acompanhanteId: acomp ? acomp.id : null, status: 'SERVICO', emNavio: true });
+            roster.push({ 
+              data: dateStr, 
+              militaryId: titular.id, 
+              acompanhanteId: acomp ? acomp.id : null, 
+              status: 'SERVICO', 
+              emNavio: true,
+              shift: countPerDay > 1 ? SHIFTS[i] : undefined
+            });
           }
         }
         if (baseModel === 'QUARTOS') quarterRotationIdx++;
@@ -191,7 +199,14 @@ export function generateRoster(
         }
       } else if (frozenMilitaries.length > 0) {
         frozenMilitaries.forEach((m, idx) => {
-          roster.push({ data: dateStr, militaryId: m.id, acompanhanteId: frozenAcompanhantes[idx]?.id || null, status: 'SERVICO', emNavio: true });
+          roster.push({ 
+            data: dateStr, 
+            militaryId: m.id, 
+            acompanhanteId: frozenAcompanhantes[idx]?.id || null, 
+            status: 'SERVICO', 
+            emNavio: true,
+            shift: countPerDay > 1 ? SHIFTS[idx] : undefined
+          });
         });
       } else {
         roster.push({ data: dateStr, militaryId: null, acompanhanteId: null, status: 'INDISPONIVEL', emNavio: true });
@@ -227,7 +242,14 @@ export function generateRoster(
       if (titular) {
         dayTitulars.push(titular);
         const acomp = chooseAcompanhante(dateStr, militares, statusPeriods, acompanhanteCounters, titular.id, acompDuration);
-        roster.push({ data: dateStr, militaryId: titular.id, acompanhanteId: acomp ? acomp.id : null, status: 'SERVICO', emNavio: false });
+        roster.push({ 
+          data: dateStr, 
+          militaryId: titular.id, 
+          acompanhanteId: acomp ? acomp.id : null, 
+          status: 'SERVICO', 
+          emNavio: false,
+          shift: countPerDay > 1 ? SHIFTS[i] : undefined
+        });
       }
     }
     if (baseModel === 'QUARTOS') quarterRotationIdx++;
@@ -297,7 +319,11 @@ function applyManualSwaps(baseRoster: RosterEntry[], manualSwaps: ManualSwap[]):
   const workingRoster = baseRoster.map(e => ({ ...e }));
   
   for (const swap of manualSwaps) {
-    const entryIndex = workingRoster.findIndex(e => e.data === swap.data && e.militaryId === swap.originalMilitaryId);
+    const entryIndex = workingRoster.findIndex(e => 
+      e.data === swap.data && 
+      e.militaryId === swap.originalMilitaryId &&
+      (!swap.shift || e.shift === swap.shift)
+    );
     if (entryIndex === -1) continue;
 
     const entry = workingRoster[entryIndex];

@@ -14,7 +14,8 @@ import {
   ArrowRightLeft,
   UserPlus,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Timer
 } from 'lucide-react';
 import { format, addDays, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -61,13 +62,14 @@ export default function App() {
 
   // Modal State
   const [modal, setModal] = useState<{
-    type: 'CHOICE' | 'SELECT_NEW' | 'CONFIRM_ASSIGN' | 'ALERT';
+    type: 'CHOICE' | 'SELECT_NEW' | 'CONFIRM_ASSIGN' | 'ALERT' | 'SELECT_TITULAR_TO_REPLACE' | 'SELECT_SHIFT_SWAP';
     date: string;
     rowMilitaryId: number;
     oldId?: number;
     newId?: number;
     swapType?: 'troca' | 'substituir';
     message?: string;
+    shift?: string;
   } | null>(null);
 
   // Load data
@@ -201,23 +203,31 @@ export default function App() {
   };
 
   const handleCellClick = (date: string, rowMilitaryId: number) => {
-    const entry = roster.find(e => e.data === date);
-    const titularId = entry?.militaryId;
+    const dayEntries = roster.filter(e => e.data === date);
+    const titularEntry = dayEntries.find(e => e.militaryId === rowMilitaryId);
 
-    if (titularId === rowMilitaryId) {
-      setModal({ type: 'CHOICE', date, rowMilitaryId });
+    if (titularEntry) {
+      setModal({ type: 'CHOICE', date, rowMilitaryId, shift: titularEntry.shift });
     } else {
-      setModal({ 
-        type: 'CONFIRM_ASSIGN', 
-        date, 
-        rowMilitaryId, 
-        oldId: titularId || 0, 
-        newId: rowMilitaryId 
-      });
+      const activeEntries = dayEntries.filter(e => e.militaryId !== null);
+      if (activeEntries.length > 1) {
+        setModal({ type: 'SELECT_TITULAR_TO_REPLACE', date, rowMilitaryId, newId: rowMilitaryId });
+      } else {
+        const titularId = activeEntries[0]?.militaryId || 0;
+        const shift = activeEntries[0]?.shift;
+        setModal({ 
+          type: 'CONFIRM_ASSIGN', 
+          date, 
+          rowMilitaryId, 
+          oldId: titularId, 
+          newId: rowMilitaryId,
+          shift
+        });
+      }
     }
   };
 
-  const addSwap = (date: string, oldId: number, newId: number, type: 'troca' | 'substituir') => {
+  const addSwap = (date: string, oldId: number, newId: number, type: 'troca' | 'substituir', shift?: string) => {
     if (oldId === newId) {
       setModal({ type: 'ALERT', date: '', rowMilitaryId: 0, message: 'O militar selecionado já é o titular.' });
       return;
@@ -226,7 +236,8 @@ export default function App() {
       data: date,
       originalMilitaryId: oldId,
       newMilitaryId: newId,
-      type
+      type,
+      shift
     }]);
     setModal(null);
   };
@@ -245,7 +256,10 @@ export default function App() {
         const status = getStatusAtivo(m.id, date, statusPeriods);
         
         let cellValue = '—';
-        if (isTitular) cellValue = 'SERVIÇO' + (entry.emNavio ? ' (NAVIO)' : '');
+        if (isTitular) {
+          cellValue = 'SERVIÇO' + (entry.emNavio ? ' (NAVIO)' : '');
+          if (entry.shift) cellValue += ` [${entry.shift}]`;
+        }
         else if (isAcomp) cellValue = 'ACOMP.';
         else if (status) cellValue = STATUS_LABELS[status];
         
@@ -498,6 +512,8 @@ export default function App() {
         title={
           modal?.type === 'CHOICE' ? 'Ações de Serviço' :
           modal?.type === 'SELECT_NEW' ? 'Selecionar Militar' :
+          modal?.type === 'SELECT_TITULAR_TO_REPLACE' ? 'Turnos do Dia' :
+          modal?.type === 'SELECT_SHIFT_SWAP' ? 'Trocar Horário' :
           modal?.type === 'CONFIRM_ASSIGN' ? 'Confirmar Atribuição' : 'Aviso'
         }
       >
@@ -505,6 +521,8 @@ export default function App() {
           <div className="flex flex-col gap-4">
             <p className="text-sm text-text-muted mb-4 font-mono font-bold uppercase tracking-wider">
               Ação requerida para: <span className="text-accent">{militares.find(m => m.id === modal.rowMilitaryId)?.name}</span>
+              <br />
+              Horário: <span className="text-accent">{modal.shift || 'Regime 24h'}</span>
               <br />
               Data: <span className="text-accent">{format(parseISO(modal.date), 'dd/MM/yyyy')}</span>
             </p>
@@ -532,6 +550,20 @@ export default function App() {
                 <div className="text-[10px] font-mono font-bold text-text-muted uppercase tracking-widest">Troca bilateral de datas</div>
               </div>
             </button>
+            {modal.shift && roster.filter(e => e.data === modal.date && e.militaryId !== null).length > 1 && (
+              <button 
+                onClick={() => setModal({ ...modal, type: 'SELECT_SHIFT_SWAP' })}
+                className="w-full p-5 bg-accent/5 border border-accent/20 rounded-2xl flex items-center gap-5 hover:bg-accent/10 hover:border-accent/50 transition-all group text-left"
+              >
+                <div className="p-3 bg-accent/20 rounded-xl border border-accent/20 text-accent transition-colors shadow-lg">
+                  <Timer className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="font-display font-black text-accent text-lg tracking-tight">Trocar Horário (Turno)</div>
+                  <div className="text-[10px] font-mono font-bold text-accent/80 uppercase tracking-widest">Trocar com outro militar do dia</div>
+                </div>
+              </button>
+            )}
           </div>
         )}
 
@@ -542,7 +574,7 @@ export default function App() {
               {militares.filter(m => m.id !== modal.oldId).map((m, idx) => (
                 <button
                   key={m.id}
-                  onClick={() => addSwap(modal.date, modal.oldId!, m.id, modal.swapType!)}
+                  onClick={() => addSwap(modal.date, modal.oldId!, m.id, modal.swapType!, modal.shift)}
                   className="w-full p-4 bg-white/5 border border-white/10 rounded-xl flex items-center gap-4 hover:bg-white/10 hover:border-accent/30 transition-all text-left group"
                 >
                   <span className="text-[10px] bg-bg-main text-accent px-2.5 py-1 rounded-lg font-black border border-white/5 group-hover:brass-glow transition-all">
@@ -555,14 +587,87 @@ export default function App() {
           </div>
         )}
 
+        {modal?.type === 'SELECT_TITULAR_TO_REPLACE' && (
+          <div className="flex flex-col gap-4">
+            <p className="label-tech mb-2">Substituir qual turno?</p>
+            <div className="flex flex-col gap-2">
+              {roster.filter(e => e.data === modal.date && e.militaryId !== null).map((e) => (
+                <button
+                  key={e.shift}
+                  onClick={() => setModal({
+                    type: 'CONFIRM_ASSIGN',
+                    date: modal.date,
+                    rowMilitaryId: modal.rowMilitaryId,
+                    oldId: e.militaryId!,
+                    newId: modal.newId!,
+                    shift: e.shift
+                  })}
+                  className="w-full p-5 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-5 hover:bg-white/10 transition-all text-left"
+                >
+                  <div className="p-3 bg-bg-main rounded-xl border border-white/5 text-accent shadow-lg">
+                    <Timer className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="font-display font-black text-text-main text-lg tracking-tight">{e.shift || 'Serviço'}</div>
+                    <div className="text-[10px] font-mono font-bold text-text-muted uppercase tracking-widest">
+                      Atual: {militares.find(m => m.id === e.militaryId)?.name}
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {modal?.type === 'SELECT_SHIFT_SWAP' && (
+          <div className="flex flex-col gap-4">
+            <p className="label-tech mb-2">Trocar turno com quem?</p>
+            <div className="flex flex-col gap-2">
+              {roster.filter(e => e.data === modal.date && e.militaryId !== null && e.militaryId !== modal.rowMilitaryId).map((e) => (
+                <button
+                  key={e.shift}
+                  onClick={() => {
+                    const newManualSwaps = [
+                      ...manualSwaps,
+                      { data: modal.date, originalMilitaryId: modal.rowMilitaryId, newMilitaryId: e.militaryId!, type: 'substituir', shift: modal.shift },
+                      { data: modal.date, originalMilitaryId: e.militaryId!, newMilitaryId: modal.rowMilitaryId, type: 'substituir', shift: e.shift }
+                    ];
+                    setManualSwaps(newManualSwaps as ManualSwap[]);
+                    setModal(null);
+                  }}
+                  className="w-full p-5 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-5 hover:bg-white/10 transition-all text-left"
+                >
+                  <div className="p-3 bg-bg-main rounded-xl border border-white/5 text-accent shadow-lg">
+                    <UserPlus className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="font-display font-black text-text-main text-lg tracking-tight">{e.shift}</div>
+                    <div className="text-[10px] font-mono font-bold text-text-muted uppercase tracking-widest">
+                      Com: {militares.find(m => m.id === e.militaryId)?.name}
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {modal?.type === 'CONFIRM_ASSIGN' && (
           <div className="flex flex-col gap-8">
-            <div className="flex items-center gap-5 p-6 bg-accent/10 rounded-3xl border border-accent/20">
-              <div className="p-3 bg-accent rounded-2xl shadow-lg brass-glow">
-                <AlertCircle className="w-6 h-6 text-bg-main shrink-0" />
+            <div className="flex flex-col gap-5 p-6 bg-accent/10 rounded-3xl border border-accent/20">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-accent rounded-2xl shadow-lg brass-glow">
+                  <AlertCircle className="w-6 h-6 text-bg-main shrink-0" />
+                </div>
+                <div className="font-display font-black text-text-main text-xl tracking-tight">Atribuir Serviço</div>
               </div>
-              <p className="text-sm text-text-main font-bold leading-relaxed">
-                Confirmar atribuição de serviço para <span className="text-accent">{militares.find(m => m.id === modal.newId)?.name}</span> no dia <span className="text-accent">{format(parseISO(modal.date), 'dd/MM/yyyy')}</span>?
+              <p className="text-sm text-text-main font-medium leading-relaxed">
+                Deseja atribuir serviço para <span className="text-accent font-bold">{militares.find(m => m.id === modal.newId)?.name}</span>?
+                <br /><br />
+                <span className="text-[10px] font-mono font-bold text-text-muted uppercase tracking-widest block mb-1">Detalhes:</span>
+                • Data: <span className="font-bold">{format(parseISO(modal.date), 'dd/MM/yyyy')}</span>
+                {modal.shift && <><br />• Horário: <span className="font-bold">{modal.shift}</span></>}
+                {modal.oldId !== 0 && <><br />• Substituindo: <span className="font-bold">{militares.find(m => m.id === modal.oldId)?.name}</span></>}
               </p>
             </div>
             <div className="flex gap-4">
@@ -573,7 +678,7 @@ export default function App() {
                 ABORTAR
               </button>
               <button 
-                onClick={() => addSwap(modal.date, modal.oldId!, modal.newId!, 'substituir')}
+                onClick={() => addSwap(modal.date, modal.oldId!, modal.newId!, 'substituir', modal.shift)}
                 className="flex-1 px-6 py-4 bg-accent text-bg-main rounded-2xl text-sm font-black hover:brightness-110 transition-all shadow-lg brass-glow"
               >
                 CONFIRMAR

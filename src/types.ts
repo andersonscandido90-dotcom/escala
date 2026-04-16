@@ -40,6 +40,7 @@ export interface ManualSwap {
   originalMilitaryId: number;
   newMilitaryId: number;
   type: 'troca' | 'substituir';
+  shift?: string;
 }
 
 export interface RosterEntry {
@@ -48,6 +49,7 @@ export interface RosterEntry {
   acompanhanteId: number | null;
   status: StatusType;
   emNavio: boolean;
+  shift?: string;
 }
 
 export const STATUS_LABELS: Record<StatusType, string> = {
