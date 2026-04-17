@@ -30,11 +30,11 @@ export const ShipManager: React.FC<ShipManagerProps> = ({
         <div className="label-tech mb-1">Módulo de Operações</div>
         <h3 className="text-xl font-display font-black text-text-main tracking-tight mb-8 flex items-center gap-3">
           <Ship className="w-6 h-6 text-accent" />
-          Registrar Período no Mar
+          Registrar Dias de Mar
         </h3>
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
           <div className="flex flex-col gap-2">
-            <label className="label-tech">Suspensão (Data/Hora)</label>
+            <label className="label-tech">Suspender (Data/Hora)</label>
             <input
               type="datetime-local"
               value={formData.start}
@@ -56,7 +56,7 @@ export const ShipManager: React.FC<ShipManagerProps> = ({
             className="px-6 py-3 bg-accent text-bg-main rounded-xl text-sm font-black hover:brightness-110 transition-all shadow-lg brass-glow flex items-center justify-center gap-2"
           >
             <Plus className="w-4 h-4" />
-            Registrar Missão
+            Registrar Dias de Mar
           </button>
         </form>
         
@@ -69,11 +69,11 @@ export const ShipManager: React.FC<ShipManagerProps> = ({
             <ul className="space-y-2 text-text-muted font-bold font-mono">
               <li className="flex items-center gap-3">
                 <div className="w-1.5 h-1.5 bg-accent rounded-full brass-glow" />
-                SUSPENSÃO ANTES DAS 11:45: SERVIÇO ESTENDIDO ATÉ O RETORNO.
+                SUSPENDER ANTES DAS 11:45: SERVIÇO ESTENDIDO ATÉ O RETORNO.
               </li>
               <li className="flex items-center gap-3">
                 <div className="w-1.5 h-1.5 bg-accent rounded-full brass-glow" />
-                SUSPENSÃO APÓS 11:45: DIA ATUAL COMPLETO, DIAS SEGUINTES EM PAUSA.
+                SUSPENDER APÓS 11:45: DIA ATUAL COMPLETO, DIAS SEGUINTES EM PAUSA.
               </li>
             </ul>
           </div>
@@ -93,7 +93,7 @@ export const ShipManager: React.FC<ShipManagerProps> = ({
                   <span className="text-white/10">→</span>
                   {format(parseISO(p.end), 'dd/MM HH:mm')}
                 </div>
-                <p className="text-[10px] text-text-muted uppercase tracking-[0.3em] font-mono font-bold mt-1">Missão Operacional Confirmada</p>
+                <p className="text-[10px] text-text-muted uppercase tracking-[0.3em] font-mono font-bold mt-1">Dia de Mar Confirmado</p>
               </div>
             </div>
             <button

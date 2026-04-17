@@ -114,10 +114,12 @@ export const PersonnelManager: React.FC<PersonnelManagerProps> = ({
                         type="text"
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}
-                        onBlur={() => handleUpdate(m.id)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleUpdate(m.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleUpdate(m.id);
+                          if (e.key === 'Escape') setEditingId(null);
+                        }}
                         autoFocus
-                        className="bg-bg-main border border-accent/30 rounded-lg px-3 py-1.5 text-sm focus:outline-none text-text-main w-full max-w-md"
+                        className="bg-bg-main border border-accent/30 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-accent text-text-main w-full"
                       />
                     ) : (
                       <span className="font-display font-bold text-text-main tracking-tight">{m.name}</span>
@@ -128,8 +130,11 @@ export const PersonnelManager: React.FC<PersonnelManagerProps> = ({
                       <select
                         value={editQuarto}
                         onChange={(e) => setEditQuarto(Number(e.target.value))}
-                        onBlur={() => handleUpdate(m.id)}
-                        className="bg-bg-main border border-accent/30 rounded-lg px-2 py-1 text-sm focus:outline-none text-text-main"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleUpdate(m.id);
+                          if (e.key === 'Escape') setEditingId(null);
+                        }}
+                        className="bg-bg-main border border-accent/30 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-accent text-text-main"
                       >
                         <option value={1}>1º</option>
                         <option value={2}>2º</option>
@@ -148,8 +153,11 @@ export const PersonnelManager: React.FC<PersonnelManagerProps> = ({
                         type="number"
                         value={editAntiguidade}
                         onChange={(e) => setEditAntiguidade(Number(e.target.value))}
-                        onBlur={() => handleUpdate(m.id)}
-                        className="bg-bg-main border border-accent/30 rounded-lg px-2 py-1 text-sm focus:outline-none text-text-main w-20"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleUpdate(m.id);
+                          if (e.key === 'Escape') setEditingId(null);
+                        }}
+                        className="bg-bg-main border border-accent/30 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-accent text-text-main w-20"
                       />
                     ) : (
                       <span className="text-text-muted font-bold">
@@ -158,24 +166,43 @@ export const PersonnelManager: React.FC<PersonnelManagerProps> = ({
                     )}
                   </td>
                   <td className="p-6 text-right">
-                    <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => {
-                          setEditingId(m.id);
-                          setEditName(m.name);
-                          setEditQuarto(m.quarto || 1);
-                          setEditAntiguidade(m.antiguidade);
-                        }}
-                        className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-text-muted hover:text-text-main transition-all border border-white/5"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => onRemove(m.id)}
-                        className="p-2.5 bg-red-500/10 hover:bg-red-500/20 rounded-xl text-red-400 transition-all border border-red-500/20"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                    <div className="flex justify-end gap-2">
+                      {editingId === m.id ? (
+                        <>
+                          <button
+                            onClick={() => handleUpdate(m.id)}
+                            className="px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-[10px] font-black hover:brightness-110 transition-all shadow-sm"
+                          >
+                            SALVAR
+                          </button>
+                          <button
+                            onClick={() => setEditingId(null)}
+                            className="px-3 py-1.5 bg-white/5 border border-white/10 text-text-muted rounded-lg text-[10px] font-black hover:bg-white/10 transition-all"
+                          >
+                            CANCELAR
+                          </button>
+                        </>
+                      ) : (
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                          <button
+                            onClick={() => {
+                              setEditingId(m.id);
+                              setEditName(m.name);
+                              setEditQuarto(m.quarto || 1);
+                              setEditAntiguidade(m.antiguidade);
+                            }}
+                            className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-text-muted hover:text-text-main transition-all border border-white/5"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => onRemove(m.id)}
+                            className="p-2.5 bg-red-500/10 hover:bg-red-500/20 rounded-xl text-red-400 transition-all border border-red-500/20"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </td>
                 </tr>

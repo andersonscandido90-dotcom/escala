@@ -247,19 +247,30 @@ export default function App() {
   // Sync active states with services array
   useEffect(() => {
     if (activeServiceId !== null) {
-      setServices(prev => prev.map(s => s.id === activeServiceId ? {
-        ...s,
-        name: serviceName,
-        militares,
-        statusPeriods,
-        shipPeriods,
-        manualSwaps,
-        acompDuration,
-        rosterModel,
-        holidayDates,
-        nextIds,
-        config
-      } : s));
+      setServices(prev => prev.map(s => {
+        // shipPeriods is global: update for ALL services
+        const baseUpdate = {
+          ...s,
+          shipPeriods
+        };
+
+        // Other states are local to active service
+        if (s.id === activeServiceId) {
+          return {
+            ...baseUpdate,
+            name: serviceName,
+            militares,
+            statusPeriods,
+            manualSwaps,
+            acompDuration,
+            rosterModel,
+            holidayDates,
+            nextIds,
+            config
+          };
+        }
+        return baseUpdate;
+      }));
     }
   }, [militares, statusPeriods, shipPeriods, manualSwaps, acompDuration, rosterModel, holidayDates, nextIds, config, serviceName, activeServiceId]);
 
@@ -476,7 +487,7 @@ export default function App() {
               active={activeTab === 'ship'} 
               onClick={() => setActiveTab('ship')} 
               icon={<Ship className="w-4 h-4" />} 
-              label="Missões no Mar" 
+              label="Dias de Mar" 
             />
           </ul>
         </nav>
@@ -539,7 +550,7 @@ export default function App() {
                 {activeTab === 'dashboard' ? 'Painel de Controle' : 
                  activeTab === 'roster' ? 'Escala de Serviço' : 
                  activeTab === 'personnel' ? 'Quadro de Militares' : 
-                 activeTab === 'status' ? 'Status e Impedimentos' : 'Missões no Mar'}
+                 activeTab === 'status' ? 'Status e Impedimentos' : 'Dias de Mar'}
               </h1>
             </div>
           </div>
