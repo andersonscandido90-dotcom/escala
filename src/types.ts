@@ -75,3 +75,17 @@ export const STATUS_COLORS: Record<StatusType, string> = {
   INDISPONIVEL: 'bg-slate-200 text-slate-500',
   SERVICO: 'bg-emerald-500 text-white',
 };
+
+export interface RosterService {
+  id: number;
+  name: string;
+  militares: Military[];
+  statusPeriods: StatusPeriod[];
+  shipPeriods: ShipPeriod[];
+  manualSwaps: ManualSwap[];
+  acompDuration: number;
+  rosterModel: RosterModel;
+  holidayDates: string[];
+  nextIds: { military: number; status: number; ship: number };
+  config: { startDate: string; days: number };
+}

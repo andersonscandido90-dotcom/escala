@@ -15,7 +15,11 @@ import {
   UserPlus,
   CheckCircle2,
   AlertCircle,
-  Timer
+  Timer,
+  Plus,
+  Trash2,
+  FolderPlus,
+  Pencil
 } from 'lucide-react';
 import { format, addDays, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -26,7 +30,8 @@ import {
   ManualSwap, 
   RosterEntry,
   STATUS_LABELS,
-  RosterModel
+  RosterModel,
+  RosterService
 } from './types';
 import { generateRoster, getStatusAtivo } from './lib/rosterLogic';
 import { Dashboard } from './components/Dashboard';
@@ -44,7 +49,11 @@ const STORAGE_KEY = 'escala_pro_data';
 export default function App() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'roster' | 'personnel' | 'status' | 'ship'>('roster');
   
-  // State
+  // Multi-service State
+  const [services, setServices] = useState<RosterService[]>([]);
+  const [activeServiceId, setActiveServiceId] = useState<number | null>(null);
+
+  // Current Active Service State
   const [militares, setMilitares] = useState<Military[]>([]);
   const [statusPeriods, setStatusPeriods] = useState<StatusPeriod[]>([]);
   const [shipPeriods, setShipPeriods] = useState<ShipPeriod[]>([]);
@@ -59,10 +68,12 @@ export default function App() {
 
   // IDs
   const [nextIds, setNextIds] = useState({ military: 1, status: 1, ship: 1 });
+  const [serviceName, setServiceName] = useState("Escala Geral");
+  const [newServiceName, setNewServiceName] = useState("");
 
   // Modal State
   const [modal, setModal] = useState<{
-    type: 'CHOICE' | 'SELECT_NEW' | 'CONFIRM_ASSIGN' | 'ALERT' | 'SELECT_TITULAR_TO_REPLACE' | 'SELECT_SHIFT_SWAP';
+    type: 'CHOICE' | 'SELECT_NEW' | 'CONFIRM_ASSIGN' | 'ALERT' | 'SELECT_TITULAR_TO_REPLACE' | 'SELECT_SHIFT_SWAP' | 'SELECT_SPECIFIC_SHIFT' | 'MANAGE_SERVICES' | 'CONFIRM_DELETE_SERVICE';
     date: string;
     rowMilitaryId: number;
     oldId?: number;
@@ -70,6 +81,7 @@ export default function App() {
     swapType?: 'troca' | 'substituir';
     message?: string;
     shift?: string;
+    serviceId?: number;
   } | null>(null);
 
   // Load data
@@ -78,17 +90,36 @@ export default function App() {
     if (saved) {
       try {
         const data = JSON.parse(saved);
-        setMilitares(data.militares || []);
-        setStatusPeriods(data.statusPeriods || []);
-        setShipPeriods(data.shipPeriods || []);
-        setManualSwaps(data.manualSwaps || []);
-        setAcompDuration(data.acompDuration || 3);
-        setRosterModel(data.rosterModel || 'CORRIDA');
-        setHolidayDates(data.holidayDates || []);
-        setNextIds(data.nextIds || { military: 1, status: 1, ship: 1 });
-        if (data.config) {
-          setConfig(data.config);
+        
+        // Migration to multi-service
+        if (data.services && data.services.length > 0) {
+          setServices(data.services);
+          const activeId = data.activeServiceId || data.services[0]?.id;
+          setActiveServiceId(activeId);
+          const active = data.services.find((s: any) => s.id === activeId) || data.services[0];
+          if (active) {
+            loadServiceData(active);
+          }
+        } else {
+          // Migrate old single service data
+          const initialService: RosterService = {
+            id: Date.now(),
+            name: "Escala Geral",
+            militares: data.militares || [],
+            statusPeriods: data.statusPeriods || [],
+            shipPeriods: data.shipPeriods || [],
+            manualSwaps: data.manualSwaps || [],
+            acompDuration: data.acompDuration || 3,
+            rosterModel: data.rosterModel || 'CORRIDA',
+            holidayDates: data.holidayDates || [],
+            nextIds: data.nextIds || { military: 1, status: 1, ship: 1 },
+            config: data.config || { startDate: format(addDays(new Date(), 1), 'yyyy-MM-dd'), days: 30 }
+          };
+          setServices([initialService]);
+          setActiveServiceId(initialService.id);
+          loadServiceData(initialService);
         }
+
         if (data.activeTab) {
           setActiveTab(data.activeTab);
         }
@@ -96,33 +127,152 @@ export default function App() {
         console.error('Error loading data', e);
       }
     } else {
-      // Default data
+      // Default initial data
       const initialMilitares = Array.from({ length: 16 }, (_, i) => ({
         id: i + 1,
         name: `Militar ${String(i + 1).padStart(2, '0')}`,
         quarto: (i % 4) + 1,
-        antiguidade: i + 1 // 1 = Antigo, 16 = Moderno
+        antiguidade: i + 1
       }));
-      setMilitares(initialMilitares);
-      setNextIds({ military: 17, status: 1, ship: 1 });
+      const initialService: RosterService = {
+        id: Date.now(),
+        name: "Escala Geral",
+        militares: initialMilitares,
+        statusPeriods: [],
+        shipPeriods: [],
+        manualSwaps: [],
+        acompDuration: 3,
+        rosterModel: 'CORRIDA',
+        holidayDates: [],
+        nextIds: { military: 17, status: 1, ship: 1 },
+        config: { startDate: format(addDays(new Date(), 1), 'yyyy-MM-dd'), days: 30 }
+      };
+      setServices([initialService]);
+      setActiveServiceId(initialService.id);
+      loadServiceData(initialService);
     }
   }, []);
 
-  // Save data
+  const loadServiceData = (service: RosterService) => {
+    setMilitares(service.militares);
+    setStatusPeriods(service.statusPeriods || []);
+    setShipPeriods(service.shipPeriods || []);
+    setManualSwaps(service.manualSwaps || []);
+    setAcompDuration(service.acompDuration || 3);
+    setRosterModel(service.rosterModel || 'CORRIDA');
+    setHolidayDates(service.holidayDates || []);
+    setNextIds(service.nextIds || { military: 1, status: 1, ship: 1 });
+    setConfig(service.config || { startDate: format(addDays(new Date(), 1), 'yyyy-MM-dd'), days: 30 });
+    setServiceName(service.name);
+  };
+
+  const createNewService = () => {
+    setNewServiceName("");
+    setModal({ type: 'MANAGE_SERVICES', date: '', rowMilitaryId: 0, message: 'CREATE' });
+  };
+
+  const handleServiceSave = () => {
+    if (!newServiceName.trim()) {
+      setModal({ type: 'ALERT', date: '', rowMilitaryId: 0, message: "O nome não pode ser vazio." });
+      return;
+    }
+
+    if (modal?.message === 'CREATE') {
+      const newService: RosterService = {
+        id: Date.now(),
+        name: newServiceName,
+        militares: [],
+        statusPeriods: [],
+        shipPeriods: [],
+        manualSwaps: [],
+        acompDuration: 3,
+        rosterModel: 'CORRIDA',
+        holidayDates: [],
+        nextIds: { military: 1, status: 1, ship: 1 },
+        config: { startDate: format(addDays(new Date(), 1), 'yyyy-MM-dd'), days: 30 }
+      };
+      setServices(prev => [...prev, newService]);
+      setActiveServiceId(newService.id);
+      loadServiceData(newService);
+    } else if (modal?.message === 'RENAME') {
+      setServiceName(newServiceName);
+    }
+    setModal(null);
+  };
+
+  const switchService = (id: number) => {
+    if (id === activeServiceId) return;
+    
+    // Explicit sync before switching
+    const currentData = {
+      name: serviceName,
+      militares, statusPeriods, shipPeriods, manualSwaps, acompDuration, rosterModel, holidayDates, nextIds, config
+    };
+    
+    setServices(prev => prev.map(s => s.id === activeServiceId ? { ...s, ...currentData } : s));
+
+    const next = services.find(s => s.id === id);
+    if (next) {
+      setActiveServiceId(id);
+      loadServiceData(next);
+    }
+  };
+
+  const deleteService = (id: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (services.length <= 1) {
+      setModal({ type: 'ALERT', date: '', rowMilitaryId: 0, message: "Você deve ter pelo menos um tipo de serviço." });
+      return;
+    }
+    
+    setModal({ type: 'CONFIRM_DELETE_SERVICE', date: '', rowMilitaryId: 0, serviceId: id });
+  };
+
+  const handleServiceDelete = (id: number) => {
+    const filtered = services.filter(s => s.id !== id);
+    setServices(filtered);
+    if (activeServiceId === id) {
+      const next = filtered[0];
+      setActiveServiceId(next.id);
+      loadServiceData(next);
+    }
+    setModal(null);
+  };
+
+  const renameService = () => {
+    setNewServiceName(serviceName);
+    setModal({ type: 'MANAGE_SERVICES', date: '', rowMilitaryId: 0, message: 'RENAME' });
+  };
+
+  // Sync active states with services array
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      militares,
-      statusPeriods,
-      shipPeriods,
-      manualSwaps,
-      acompDuration,
-      rosterModel,
-      holidayDates,
-      nextIds,
-      config,
-      activeTab
-    }));
-  }, [militares, statusPeriods, shipPeriods, manualSwaps, acompDuration, rosterModel, holidayDates, nextIds, config, activeTab]);
+    if (activeServiceId !== null) {
+      setServices(prev => prev.map(s => s.id === activeServiceId ? {
+        ...s,
+        name: serviceName,
+        militares,
+        statusPeriods,
+        shipPeriods,
+        manualSwaps,
+        acompDuration,
+        rosterModel,
+        holidayDates,
+        nextIds,
+        config
+      } : s));
+    }
+  }, [militares, statusPeriods, shipPeriods, manualSwaps, acompDuration, rosterModel, holidayDates, nextIds, config, serviceName, activeServiceId]);
+
+  // Save data to localStorage
+  useEffect(() => {
+    if (services.length > 0) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        services,
+        activeServiceId,
+        activeTab
+      }));
+    }
+  }, [services, activeServiceId, activeTab]);
 
   // Generate Roster
   const roster = useMemo(() => {
@@ -330,20 +480,68 @@ export default function App() {
             />
           </ul>
         </nav>
+
+        <div className="mt-8 px-4 flex flex-col gap-4">
+          <div className="label-tech px-2 flex justify-between items-center">
+            <span>Tipos de Serviço</span>
+            <button onClick={createNewService} className="p-1 hover:text-accent transition-colors"><FolderPlus className="w-4 h-4" /></button>
+          </div>
+          <div className="flex flex-col gap-1 max-h-[300px] overflow-y-auto custom-scrollbar">
+            {services.map(s => (
+              <button 
+                key={s.id}
+                onClick={() => switchService(s.id)}
+                className={cn(
+                  "flex items-center justify-between gap-3 px-4 py-3 rounded-xl text-left transition-all group",
+                  activeServiceId === s.id ? "bg-accent text-bg-main brass-glow font-bold" : "text-text-muted hover:bg-white/5"
+                )}
+              >
+                <div className="flex items-center gap-3 overflow-hidden">
+                  <CalendarRange className="w-4 h-4 flex-shrink-0" />
+                  <span className="truncate text-xs">{s.name}</span>
+                </div>
+                {services.length > 1 && (
+                  <Trash2 
+                    onClick={(e) => deleteService(s.id, e)}
+                    className={cn(
+                      "w-3.5 h-3.5 opacity-0 group-hover:opacity-50 hover:!opacity-100 transition-opacity flex-shrink-0 cursor-pointer",
+                      activeServiceId === s.id && "text-bg-main"
+                    )} 
+                  />
+                )}
+              </button>
+            ))}
+          </div>
+          <button 
+            onClick={createNewService}
+            className="flex items-center gap-3 px-4 py-3 rounded-xl text-left text-xs font-bold text-accent border border-accent/20 hover:bg-accent/10 transition-all mt-2"
+          >
+            <Plus className="w-4 h-4" />
+            Novo Serviço
+          </button>
+        </div>
       </aside>
 
       {/* Main Content */}
       <main className="lg:ml-[260px] p-10 flex flex-col gap-8 technical-grid min-h-screen">
         {/* Header */}
         <header className="flex items-center justify-between glass-panel p-6 rounded-3xl border border-white/5 shadow-2xl">
-          <div>
-            <div className="label-tech mb-1">Módulo de Comando</div>
-            <h1 className="text-3xl font-display font-black text-text-main tracking-tight">
-              {activeTab === 'dashboard' ? 'Painel de Controle' : 
-               activeTab === 'roster' ? 'Escala de Serviço' : 
-               activeTab === 'personnel' ? 'Quadro de Militares' : 
-               activeTab === 'status' ? 'Status e Impedimentos' : 'Missões no Mar'}
-            </h1>
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-accent/10 rounded-2xl border border-accent/20">
+              <ShieldAlert className="w-6 h-6 text-accent" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="label-tech">Tipo: {serviceName}</span>
+                <button onClick={renameService} className="text-text-muted hover:text-accent transition-colors"><Pencil className="w-3 h-3" /></button>
+              </div>
+              <h1 className="text-3xl font-display font-black text-text-main tracking-tight leading-tight">
+                {activeTab === 'dashboard' ? 'Painel de Controle' : 
+                 activeTab === 'roster' ? 'Escala de Serviço' : 
+                 activeTab === 'personnel' ? 'Quadro de Militares' : 
+                 activeTab === 'status' ? 'Status e Impedimentos' : 'Missões no Mar'}
+              </h1>
+            </div>
           </div>
 
           <div className="flex items-center gap-4">
@@ -730,10 +928,87 @@ export default function App() {
                 ABORTAR
               </button>
               <button 
-                onClick={() => addSwap(modal.date, modal.oldId!, modal.newId!, 'substituir', modal.shift)}
+                onClick={() => {
+                  addSwap(modal.date, modal.oldId!, modal.newId!, 'substituir', modal.shift);
+                  setModal(null);
+                }}
                 className="flex-1 px-6 py-4 bg-accent text-bg-main rounded-2xl text-sm font-black hover:brightness-110 transition-all shadow-lg brass-glow"
               >
                 CONFIRMAR
+              </button>
+            </div>
+          </div>
+        )}
+
+        {modal?.type === 'MANAGE_SERVICES' && (
+          <div className="flex flex-col gap-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-accent/10 rounded-2xl border border-accent/20">
+                <FolderPlus className="w-6 h-6 text-accent" />
+              </div>
+              <div>
+                <div className="label-tech mb-1">{modal.message === 'CREATE' ? 'Novo Serviço' : 'Renomear Serviço'}</div>
+                <h3 className="text-2xl font-display font-black text-text-main tracking-tight">Configuração de Serviço</h3>
+              </div>
+            </div>
+            
+            <div className="flex flex-col gap-3">
+              <label className="text-[10px] font-mono font-bold text-text-muted uppercase tracking-widest px-1">Nome do Serviço</label>
+              <input 
+                autoFocus
+                type="text"
+                value={newServiceName}
+                onChange={(e) => setNewServiceName(e.target.value)}
+                placeholder="Ex: Escala de Máquinas"
+                onKeyDown={(e) => e.key === 'Enter' && handleServiceSave()}
+                className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-text-main focus:outline-none focus:ring-2 focus:ring-accent/50 text-lg transition-all"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mt-2">
+              <button 
+                onClick={() => setModal(null)}
+                className="px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-sm font-black text-text-muted hover:bg-white/10 transition-all"
+              >
+                CANCELAR
+              </button>
+              <button 
+                onClick={handleServiceSave}
+                className="px-6 py-4 bg-accent text-bg-main rounded-2xl text-sm font-black hover:brightness-110 transition-all shadow-lg brass-glow"
+              >
+                {modal.message === 'CREATE' ? 'CRIAR' : 'SALVAR'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {modal?.type === 'CONFIRM_DELETE_SERVICE' && (
+          <div className="flex flex-col gap-8">
+            <div className="flex flex-col gap-5 p-6 bg-red-500/10 rounded-3xl border border-red-500/20">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-red-500 rounded-2xl shadow-lg">
+                  <Trash2 className="w-6 h-6 text-white shrink-0" />
+                </div>
+                <div className="font-display font-black text-text-main text-xl tracking-tight">Excluir Serviço</div>
+              </div>
+              <p className="text-sm text-text-main font-medium leading-relaxed">
+                Deseja realmente excluir o serviço <span className="font-black text-red-500">{services.find(s => s.id === modal.serviceId)?.name}</span>?
+                <br /><br />
+                <span className="text-red-400 font-bold uppercase text-[10px] tracking-widest">Esta ação é irreversível e apagará todos os dados desta escala.</span>
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <button 
+                onClick={() => setModal(null)}
+                className="px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-sm font-black text-text-muted hover:bg-white/10 transition-all"
+              >
+                CANCELAR
+              </button>
+              <button 
+                onClick={() => handleServiceDelete(modal.serviceId!)}
+                className="px-6 py-4 bg-red-500 text-white rounded-2xl text-sm font-black hover:brightness-110 transition-all shadow-lg"
+              >
+                EXCLUIR
               </button>
             </div>
           </div>
