@@ -86,7 +86,7 @@ export default function App() {
 
   // Modal State
   const [modal, setModal] = useState<{
-    type: 'CHOICE' | 'SELECT_NEW' | 'CONFIRM_ASSIGN' | 'ALERT' | 'SELECT_TITULAR_TO_REPLACE' | 'SELECT_SHIFT_SWAP' | 'SELECT_SPECIFIC_SHIFT' | 'MANAGE_SERVICES' | 'CONFIRM_DELETE_SERVICE';
+    type: 'CHOICE' | 'SELECT_NEW' | 'CONFIRM_ASSIGN' | 'ALERT' | 'SELECT_TITULAR_TO_REPLACE' | 'SELECT_SHIFT_SWAP' | 'SELECT_SPECIFIC_SHIFT' | 'MANAGE_SERVICES' | 'CONFIRM_DELETE_SERVICE' | 'CONFIRM_CLEAR_DATA';
     date: string;
     rowMilitaryId: number;
     oldId?: number;
@@ -682,31 +682,12 @@ export default function App() {
                     Maximizar Escala
                   </button>
                   <button 
-                    onClick={() => {
-                      if(confirm('Deseja realmente limpar todos os dados?')) {
-                        setStatusPeriods([]);
-                        setShipPeriods([]);
-                        setManualSwaps([]);
-                        setHolidayDates([]);
-                      }
-                    }}
+                    onClick={() => setModal({ type: 'CONFIRM_CLEAR_DATA', date: '', rowMilitaryId: 0 })}
                     className="px-5 py-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-xs font-bold hover:bg-red-500/20 transition-all font-mono"
                   >
                     Limpar Tudo
                   </button>
                 </div>
-              </div>
-
-              <div className={cn(
-                "p-4 bg-accent/5 border border-accent/10 rounded-2xl flex items-center gap-4 animate-in fade-in duration-500",
-                isFullScreen && "hidden"
-              )}>
-                <div className="p-2 bg-accent/20 rounded-xl">
-                  <AlertCircle className="w-5 h-5 text-accent" />
-                </div>
-                <p className="text-xs text-text-muted font-bold uppercase tracking-wider leading-relaxed">
-                  <span className="text-accent">Dica:</span> Clique no cabeçalho das datas para alternar entre <span className="text-red-400">Escala Vermelha</span> e Escala Preta. Use as setas do teclado para navegar.
-                </p>
               </div>
 
               <div className={cn(
@@ -1069,6 +1050,44 @@ export default function App() {
                 className="px-6 py-4 bg-red-500 text-white rounded-2xl text-sm font-black hover:brightness-110 transition-all shadow-lg"
               >
                 EXCLUIR
+              </button>
+            </div>
+          </div>
+        )}
+
+        {modal?.type === 'CONFIRM_CLEAR_DATA' && (
+          <div className="flex flex-col gap-8">
+            <div className="flex flex-col gap-5 p-6 bg-red-500/10 rounded-3xl border border-red-500/20">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-red-500 rounded-2xl shadow-lg brass-glow">
+                  <AlertCircle className="w-6 h-6 text-white shrink-0" />
+                </div>
+                <div className="font-display font-black text-text-main text-xl tracking-tight">Limpeza de Dados</div>
+              </div>
+              <p className="text-sm text-text-main font-medium leading-relaxed">
+                Atenção! Esta ação irá resetar <span className="font-black text-red-500">TODOS</span> os impedimentos, suspensões, trocas manuais e feriados deste serviço operacional.
+                <br /><br />
+                <span className="text-red-400 font-bold uppercase text-[10px] tracking-widest">O quadro de militares cadastrados será mantido.</span>
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <button 
+                onClick={() => setModal(null)}
+                className="px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-sm font-black text-text-muted hover:bg-white/10 transition-all"
+              >
+                CANCELAR
+              </button>
+              <button 
+                onClick={() => {
+                  setStatusPeriods([]);
+                  setShipPeriods([]);
+                  setManualSwaps([]);
+                  setHolidayDates([]);
+                  setModal(null);
+                }}
+                className="px-6 py-4 bg-red-500 text-white rounded-2xl text-sm font-black hover:brightness-110 transition-all shadow-lg"
+              >
+                LIMPAR TUDO
               </button>
             </div>
           </div>
