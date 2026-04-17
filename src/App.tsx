@@ -35,7 +35,7 @@ import {
   RosterModel,
   RosterService
 } from './types';
-import { generateRoster, getStatusAtivo } from './lib/rosterLogic';
+import { generateRoster, getStatusAtivo, STATUS_IMPEDITIVOS, isMilitaryImpeded } from './lib/rosterLogic';
 import { Dashboard } from './components/Dashboard';
 import { RosterTable } from './components/RosterTable';
 import { PersonnelManager } from './components/PersonnelManager';
@@ -820,6 +820,57 @@ export default function App() {
                 </div>
               </button>
             )}
+          </div>
+        )}
+
+        {modal?.type === 'SELECT_NEW' && (
+          <div className="flex flex-col gap-4">
+            <p className="label-tech mb-2">Selecione o militar para {modal.swapType === 'troca' ? 'permutar' : 'substituir'}:</p>
+            <div className="max-h-[400px] overflow-y-auto flex flex-col gap-2 pr-2 custom-scrollbar">
+              {militares
+                .filter(m => m.id !== modal.oldId)
+                .sort((a, b) => a.antiguidade - b.antiguidade)
+                .map((m) => {
+                  const status = getStatusAtivo(m.id, modal.date, statusPeriods);
+                  const isImpeded = isMilitaryImpeded(m.id, modal.date, statusPeriods);
+                  
+                  return (
+                    <button
+                      key={m.id}
+                      disabled={isImpeded}
+                      onClick={() => {
+                        if (modal.swapType === 'substituir' && modal.shift === undefined && roster.filter(e => e.data === modal.date).length > 1) {
+                          setModal({ ...modal, type: 'SELECT_TITULAR_TO_REPLACE', newId: m.id });
+                        } else {
+                          addSwap(modal.date, modal.oldId!, m.id, modal.swapType!, modal.shift);
+                        }
+                      }}
+                      className={cn(
+                        "w-full p-4 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-between transition-all text-left group",
+                        isImpeded ? "opacity-40 cursor-not-allowed" : "hover:bg-accent/10 hover:border-accent/40"
+                      )}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className={cn(
+                          "w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black border",
+                          isImpeded ? "bg-white/5 border-white/10" : "bg-bg-main border-white/5 text-accent"
+                        )}>
+                          {m.antiguidade}
+                        </div>
+                        <div>
+                          <div className="font-display font-black text-text-main text-sm tracking-tight leading-none mb-1">{m.name}</div>
+                          {isImpeded && status && <div className="text-[10px] font-mono font-bold text-red-400 uppercase tracking-widest">{STATUS_LABELS[status]}</div>}
+                        </div>
+                      </div>
+                      {!isImpeded && (
+                        <div className="text-[10px] font-mono font-bold text-text-muted opacity-0 group-hover:opacity-100 uppercase tracking-widest transition-opacity">
+                          Selecionar
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+            </div>
           </div>
         )}
 
