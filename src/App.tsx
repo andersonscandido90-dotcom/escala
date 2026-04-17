@@ -19,7 +19,9 @@ import {
   Plus,
   Trash2,
   FolderPlus,
-  Pencil
+  Pencil,
+  Maximize2,
+  Minimize2
 } from 'lucide-react';
 import { format, addDays, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -70,6 +72,17 @@ export default function App() {
   const [nextIds, setNextIds] = useState({ military: 1, status: 1, ship: 1 });
   const [serviceName, setServiceName] = useState("Escala Geral");
   const [newServiceName, setNewServiceName] = useState("");
+  const [isFullScreen, setIsFullScreen] = useState(false);
+
+  // Manage body scroll in full screen
+  useEffect(() => {
+    if (isFullScreen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => { document.body.style.overflow = 'unset'; };
+  }, [isFullScreen]);
 
   // Modal State
   const [modal, setModal] = useState<{
@@ -576,8 +589,35 @@ export default function App() {
           )}
 
           {activeTab === 'roster' && (
-            <div className="flex flex-col gap-8">
-              <div className="glass-panel p-8 rounded-3xl border border-white/5 shadow-2xl flex flex-wrap items-end gap-8">
+            <div className={cn(
+              "flex flex-col gap-8 transition-all duration-500",
+              isFullScreen ? "fixed inset-0 z-[100] bg-bg-main p-6 overflow-hidden flex flex-col h-screen w-screen" : "relative"
+            )}>
+              {isFullScreen && (
+                <div className="flex items-center justify-between mb-6 animate-in slide-in-from-top duration-500">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-accent/10 rounded-2xl border border-accent/20">
+                      <CalendarRange className="w-6 h-6 text-accent" />
+                    </div>
+                    <div>
+                      <div className="label-tech mb-1">Visualização Ampla • {serviceName}</div>
+                      <h2 className="text-2xl font-display font-black text-text-main tracking-tight uppercase">Escala de Serviço Geral</h2>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setIsFullScreen(false)}
+                    className="flex items-center gap-3 px-6 py-3 bg-red-500/10 border border-red-500/20 rounded-2xl text-xs font-black text-red-400 hover:bg-red-500/20 transition-all group"
+                  >
+                    <Minimize2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                    FECHAR MÓDULO AMPLO
+                  </button>
+                </div>
+              )}
+
+              <div className={cn(
+                "glass-panel p-8 rounded-3xl border border-white/5 shadow-2xl flex flex-wrap items-end gap-8",
+                isFullScreen && "hidden"
+              )}>
                 <div className="flex flex-col gap-2">
                   <label className="label-tech">Data de Início</label>
                   <input 
@@ -635,10 +675,11 @@ export default function App() {
                 </div>
                 <div className="flex gap-3">
                   <button 
-                    onClick={() => setManualSwaps([])}
-                    className="px-5 py-3 bg-white/5 border border-white/10 text-text-main rounded-xl text-xs font-bold hover:bg-white/10 transition-all"
+                    onClick={() => setIsFullScreen(true)}
+                    className="px-5 py-3 bg-accent/10 border border-accent/20 text-accent rounded-xl text-xs font-bold hover:bg-accent/20 transition-all flex items-center gap-2"
                   >
-                    Resetar Trocas
+                    <Maximize2 className="w-4 h-4" />
+                    Maximizar Escala
                   </button>
                   <button 
                     onClick={() => {
@@ -649,30 +690,38 @@ export default function App() {
                         setHolidayDates([]);
                       }
                     }}
-                    className="px-5 py-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-xs font-bold hover:bg-red-500/20 transition-all"
+                    className="px-5 py-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-xs font-bold hover:bg-red-500/20 transition-all font-mono"
                   >
                     Limpar Tudo
                   </button>
                 </div>
               </div>
 
-              <div className="p-4 bg-accent/5 border border-accent/10 rounded-2xl flex items-center gap-4">
+              <div className={cn(
+                "p-4 bg-accent/5 border border-accent/10 rounded-2xl flex items-center gap-4 animate-in fade-in duration-500",
+                isFullScreen && "hidden"
+              )}>
                 <div className="p-2 bg-accent/20 rounded-xl">
                   <AlertCircle className="w-5 h-5 text-accent" />
                 </div>
                 <p className="text-xs text-text-muted font-bold uppercase tracking-wider leading-relaxed">
-                  <span className="text-accent">Dica:</span> Clique no cabeçalho das datas (ex: SEG 17/04) para alternar entre <span className="text-red-400">Escala Vermelha</span> (Feriados/Folgas) e Escala Preta.
+                  <span className="text-accent">Dica:</span> Clique no cabeçalho das datas para alternar entre <span className="text-red-400">Escala Vermelha</span> e Escala Preta. Use as setas do teclado para navegar.
                 </p>
               </div>
 
-              <RosterTable 
-                militares={militares} 
-                roster={roster} 
-                statusPeriods={statusPeriods}
-                holidayDates={holidayDates}
-                onCellClick={handleCellClick}
-                onHeaderClick={toggleHoliday}
-              />
+              <div className={cn(
+                "flex-1 overflow-hidden flex flex-col min-h-0",
+                isFullScreen && "animate-in zoom-in-95 duration-500"
+              )}>
+                <RosterTable 
+                  militares={militares} 
+                  roster={roster} 
+                  statusPeriods={statusPeriods}
+                  holidayDates={holidayDates}
+                  onCellClick={handleCellClick}
+                  onHeaderClick={toggleHoliday}
+                />
+              </div>
             </div>
           )}
 

@@ -26,12 +26,12 @@ export const RosterTable: React.FC<RosterTableProps> = ({
   const dates = (Array.from(new Set(roster.map(e => e.data))).sort()) as string[];
 
   return (
-    <div id="roster-table-container" className="glass-panel rounded-[2rem] border border-white/5 shadow-2xl overflow-hidden">
-      <div id="roster-table-scroll" className="overflow-x-auto custom-scrollbar">
-        <table className="w-full border-collapse text-sm font-mono">
-          <thead className="sticky top-0 z-30 shadow-[0_1px_0_rgba(255,255,255,0.05)]">
+    <div id="roster-table-container" className="glass-panel rounded-[2rem] border border-white/5 shadow-2xl overflow-hidden h-full flex flex-col">
+      <div id="roster-table-scroll" className="flex-1 overflow-auto custom-scrollbar relative">
+        <table className="w-full border-collapse text-sm font-mono table-fixed">
+          <thead className="sticky top-0 z-[60]">
             <tr className="bg-bg-card border-b border-white/5 text-text-main">
-              <th className="sticky top-0 left-0 z-40 bg-bg-card p-6 text-left border-r border-white/5 min-w-[240px] shadow-[1px_1px_0_rgba(255,255,255,0.05)]">
+              <th className="sticky top-0 left-0 z-[70] bg-bg-card p-6 text-left border-r border-white/5 min-w-[240px] w-[240px]">
                 <div className="label-tech">Operador / Militar</div>
               </th>
               {dates.map(date => {
@@ -42,7 +42,7 @@ export const RosterTable: React.FC<RosterTableProps> = ({
                     key={date} 
                     onClick={() => onHeaderClick?.(date)}
                     className={cn(
-                      "sticky top-0 z-30 p-4 text-center min-w-[120px] border-r border-white/5 transition-colors cursor-pointer hover:bg-white/10 bg-bg-card",
+                      "sticky top-0 z-[60] p-4 text-center min-w-[120px] w-[120px] border-r border-white/5 transition-colors cursor-pointer hover:bg-white/10 bg-bg-card",
                       isVerm && "bg-red-500/5"
                     )}
                   >
