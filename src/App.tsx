@@ -21,7 +21,8 @@ import {
   FolderPlus,
   Pencil,
   Maximize2,
-  Minimize2
+  Minimize2,
+  FileText
 } from 'lucide-react';
 import { format, addDays, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -36,6 +37,7 @@ import {
   RosterService
 } from './types';
 import { generateRoster, getStatusAtivo, STATUS_IMPEDITIVOS, isMilitaryImpeded } from './lib/rosterLogic';
+import { exportDailyDetailPDF, DailyExportData } from './lib/pdfExport';
 import { Dashboard } from './components/Dashboard';
 import { RosterTable } from './components/RosterTable';
 import { PersonnelManager } from './components/PersonnelManager';
@@ -73,6 +75,11 @@ export default function App() {
   const [serviceName, setServiceName] = useState("Escala Geral");
   const [newServiceName, setNewServiceName] = useState("");
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [signatureData, setSignatureData] = useState({
+    chefe: { name: 'FELIPE TEIXEIRA MOLINARI GENTIL', rank: 'Capitão de Corveta', title: 'Chefe do Departamento de Máquinas' },
+    detalhista: { name: 'ANDRE VINICIUS FERNANDES DA SILVA', rank: 'Terceiro-Sargento (MO)', title: 'Detalhista do Departamento de Máquinas' }
+  });
+  const [exportMappings, setExportMappings] = useState<Record<string, number | null>>({});
 
   // Manage body scroll in full screen
   useEffect(() => {
@@ -86,7 +93,7 @@ export default function App() {
 
   // Modal State
   const [modal, setModal] = useState<{
-    type: 'CHOICE' | 'SELECT_NEW' | 'CONFIRM_ASSIGN' | 'ALERT' | 'SELECT_TITULAR_TO_REPLACE' | 'SELECT_SHIFT_SWAP' | 'SELECT_SPECIFIC_SHIFT' | 'MANAGE_SERVICES' | 'CONFIRM_DELETE_SERVICE' | 'CONFIRM_CLEAR_DATA';
+    type: 'CHOICE' | 'SELECT_NEW' | 'CONFIRM_ASSIGN' | 'ALERT' | 'SELECT_TITULAR_TO_REPLACE' | 'SELECT_SHIFT_SWAP' | 'SELECT_SPECIFIC_SHIFT' | 'MANAGE_SERVICES' | 'CONFIRM_DELETE_SERVICE' | 'CONFIRM_CLEAR_DATA' | 'DAILY_EXPORT';
     date: string;
     rowMilitaryId: number;
     oldId?: number;
@@ -135,6 +142,12 @@ export default function App() {
 
         if (data.activeTab) {
           setActiveTab(data.activeTab);
+        }
+        if (data.signatureData) {
+          setSignatureData(data.signatureData);
+        }
+        if (data.exportMappings) {
+          setExportMappings(data.exportMappings);
         }
       } catch (e) {
         console.error('Error loading data', e);
@@ -212,6 +225,247 @@ export default function App() {
     }
     setModal(null);
   };
+
+  const openDailyExport = () => {
+    const newMappings = { ...exportMappings };
+    let changed = false;
+    
+    const mappingKeys = [
+      { key: 'fielAux', terms: ['fiel'] },
+      { key: 'eletrlux', terms: ['eletri', 'eletr'] },
+      { key: 'patrulhaCav', terms: ['patrulha', 'cav'] },
+      { key: 'supervisorMaq', terms: ['sup', 'maq'] },
+      { key: 'fielCav', terms: ['fiel', 'cav'] },
+      { key: 'supervisorMO', terms: ['sup', 'mo'] },
+      { key: 'supervisorEL', terms: ['sup', 'el'] },
+      { key: 'caboDia', terms: ['cabo'] },
+    ];
+
+    mappingKeys.forEach(m => {
+      if (!newMappings[m.key]) {
+        // Try multiple matching strategies
+        const match = services.find(s => {
+          const name = s.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+          return m.terms.every(term => name.includes(term));
+        }) || services.find(s => {
+          const name = s.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+          return m.terms.some(term => name.includes(term));
+        });
+
+        if (match) {
+          newMappings[m.key] = match.id;
+          changed = true;
+        }
+      }
+    });
+
+    if (changed) setExportMappings(newMappings);
+    setModal({ type: 'DAILY_EXPORT', date: format(new Date(), 'yyyy-MM-dd'), rowMilitaryId: 0 });
+  };
+
+  const handleDailyExport = () => {
+    if (!modal) return;
+    
+    const mappedServiceIds = Object.values(exportMappings).filter(v => v !== null && v !== undefined);
+    if (mappedServiceIds.length === 0) {
+      setModal({ 
+        type: 'ALERT', 
+        date: '', 
+        rowMilitaryId: 0, 
+        message: 'Por favor, realize o "Mapeamento de Escalas" selecionando qual escala corresponde a cada serviço antes de gerar o PDF.' 
+      });
+      return;
+    }
+
+    try {
+      const rostersCache: Record<number, { srv: RosterService, roster: RosterEntry[] }> = {};
+    const getRosterData = (id: number | null | undefined) => {
+      if (!id) return null;
+      if (rostersCache[id]) return rostersCache[id];
+      const srv = services.find(s => s.id === id);
+      if (!srv) return null;
+
+      const sDate = parseISO(srv.config.startDate);
+      const tDate = parseISO(modal.date);
+      
+      // If target date is BEFORE scale start, it will be empty by design of generateRoster
+      // We calculate days from start to target
+      const diffMs = tDate.getTime() - sDate.getTime();
+      const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+      
+      // Buffer to ensure we have enough people for sequence (Retém/Acomp)
+      const rangeDays = Math.max(srv.config.days, diffDays + 15);
+      
+      const roster = generateRoster(
+        srv.config.startDate,
+        rangeDays,
+        srv.militares,
+        srv.statusPeriods || [],
+        srv.shipPeriods || [],
+        srv.manualSwaps || [],
+        srv.acompDuration || 3,
+        srv.rosterModel || 'CORRIDA',
+        srv.holidayDates || []
+      );
+      rostersCache[id] = { srv, roster };
+      return rostersCache[id];
+    };
+
+    const getShiftInfo = (srvId: number | null | undefined, date: string, shiftIndex: number = 0) => {
+      const data = getRosterData(srvId);
+      if (!data) return null;
+      
+      const dayEntries = data.roster.filter(e => e.data === date);
+      let entry = dayEntries[shiftIndex];
+
+      if (!entry && shiftIndex > 0 && dayEntries.length > 0) {
+        const firstEntryIndex = data.roster.findIndex(e => e.data === date);
+        if (firstEntryIndex !== -1) {
+          entry = data.roster[firstEntryIndex + shiftIndex];
+        }
+      }
+
+      if (!entry) return null;
+      return data.srv.militares.find(m => m.id === entry.militaryId) || null;
+    };
+
+    const getRetem = (srvId: number | null | undefined, date: string, shiftIndex: number = 0) => {
+      const nextDay = format(addDays(parseISO(date), 1), 'yyyy-MM-dd');
+      return getShiftInfo(srvId, nextDay, shiftIndex);
+    };
+
+    const getAcompForScale = (srvId: number | null | undefined, date: string) => {
+      const srv = services.find(s => s.id === srvId);
+      if (!srv) return [];
+      return srv.militares.filter(m => getStatusAtivo(m.id, date, srv.statusPeriods || []) === 'ACOMPANHANDO');
+    };
+
+    const data: DailyExportData = {
+      date: modal.date,
+      fielAux: [null, null, null],
+      retenFielAux: [null, null, null],
+      acompFielAux: [null, null, null],
+      patrulhaCav: [null, null, null],
+      retenPatrulhaCav: [null, null, null],
+      acompPatrulhaCav: [null, null, null],
+      supervisorMaq: null,
+      fielCav: null,
+      supervisorMO: null,
+      supervisorEL: null,
+      caboDia: null,
+      retenMaq: null, acompMaq: null,
+      retenCav: null, acompCav: null,
+      retenMO: null, acompMO: null,
+      retenEL: null, acompEL: null,
+      boys: [[null, null, null], [null, null, null], [null, null, null], [null, null, null]],
+      chefeDept: signatureData.chefe,
+      detalhista: signatureData.detalhista
+    };
+
+    // Fiel das Auxiliares (2 from scale 1, 1 from scale 2)
+    const f1 = getShiftInfo(exportMappings['fielAux'], modal.date, 0);
+    const f2 = getShiftInfo(exportMappings['fielAux'], modal.date, 1);
+    const f3 = getShiftInfo(exportMappings['eletrlux'], modal.date, 0);
+    data.fielAux = [f1, f2, f3];
+
+    // Reténs for Fiel (Next day personnel)
+    data.retenFielAux = [
+      getRetem(exportMappings['fielAux'], modal.date, 0),
+      getRetem(exportMappings['fielAux'], modal.date, 1),
+      getRetem(exportMappings['eletrlux'], modal.date, 0),
+    ];
+
+    // Acompanhando for Fiel (Personnel with status ACOMPANHANDO)
+    const acompFiel12 = getAcompForScale(exportMappings['fielAux'], modal.date);
+    const acompEletr = getAcompForScale(exportMappings['eletrlux'], modal.date);
+    data.acompFielAux = [acompFiel12[0] || null, acompFiel12[1] || null, acompEletr[0] || null];
+
+    // Patrulha do CAV
+    const p1 = getShiftInfo(exportMappings['patrulhaCav'], modal.date, 0);
+    const p2 = getShiftInfo(exportMappings['patrulhaCav'], modal.date, 1);
+    const p3 = getShiftInfo(exportMappings['patrulhaCav'], modal.date, 2);
+    data.patrulhaCav = [p1, p2, p3];
+
+    data.retenPatrulhaCav = [
+      getRetem(exportMappings['patrulhaCav'], modal.date, 0),
+      getRetem(exportMappings['patrulhaCav'], modal.date, 1),
+      getRetem(exportMappings['patrulhaCav'], modal.date, 2),
+    ];
+
+    const acompCavList = getAcompForScale(exportMappings['patrulhaCav'], modal.date);
+    data.acompPatrulhaCav = [acompCavList[0] || null, acompCavList[1] || null, acompCavList[2] || null];
+
+    // Daily services
+    const sm = getShiftInfo(exportMappings['supervisorMaq'], modal.date);
+    data.supervisorMaq = sm;
+    data.retenMaq = getRetem(exportMappings['supervisorMaq'], modal.date);
+    data.acompMaq = getAcompForScale(exportMappings['supervisorMaq'], modal.date)[0] || null;
+
+    const fc = getShiftInfo(exportMappings['fielCav'], modal.date);
+    data.fielCav = fc;
+    data.retenCav = getRetem(exportMappings['fielCav'], modal.date);
+    data.acompCav = getAcompForScale(exportMappings['fielCav'], modal.date)[0] || null;
+
+    const mo = getShiftInfo(exportMappings['supervisorMO'], modal.date);
+    data.supervisorMO = mo;
+    data.retenMO = getRetem(exportMappings['supervisorMO'], modal.date);
+    data.acompMO = getAcompForScale(exportMappings['supervisorMO'], modal.date)[0] || null;
+
+    const el = getShiftInfo(exportMappings['supervisorEL'], modal.date);
+    data.supervisorEL = el;
+    data.retenEL = getRetem(exportMappings['supervisorEL'], modal.date);
+    data.acompEL = getAcompForScale(exportMappings['supervisorEL'], modal.date)[0] || null;
+
+    data.caboDia = getShiftInfo(exportMappings['caboDia'], modal.date);
+
+    // Boys distribution logic
+    // source_08_12 = { f: data.fielAux[0], p: data.patrulhaCav[0] }
+    // source_12_16 = { f: data.fielAux[1], p: data.patrulhaCav[1] }
+    // source_16_20 = { f: data.fielAux[2], p: data.patrulhaCav[2] }
+
+    const s08 = { f: data.fielAux[0], p: data.patrulhaCav[0] };
+    const s12 = { f: data.fielAux[1], p: data.patrulhaCav[1] };
+    const s16 = { f: data.fielAux[2], p: data.patrulhaCav[2] };
+
+    data.boys = [
+      // Row 0 (Fiel row for windows 08-10, 10-12, 12-14)
+      [s12.f, s16.f, s16.f],
+      // Row 1 (Patrulha row for windows 08-10, 10-12, 12-14)
+      [s12.p, s16.p, s16.p],
+      // Row 2 (Fiel row for windows 14-16, 16-18, 18-20)
+      [s08.f, s08.f, s12.f],
+      // Row 3 (Patrulha row for windows 14-16, 16-18, 18-20)
+      [s08.p, s08.p, s12.p],
+    ];
+
+    const totalFound = [
+      ...data.fielAux, ...data.patrulhaCav, 
+      data.supervisorMaq, data.fielCav, data.supervisorMO, data.supervisorEL, data.caboDia
+    ].filter(v => v !== null).length;
+
+    if (totalFound === 0) {
+      setModal({ 
+        type: 'ALERT', 
+        date: '', 
+        rowMilitaryId: 0, 
+        message: 'Nenhum militar foi encontrado para esta data nas escalas selecionadas. Verifique se o mapeamento está correto e se a data selecionada está dentro do período das escalas.' 
+      });
+      return;
+    }
+
+    exportDailyDetailPDF(data);
+    setModal(null);
+  } catch (error: any) {
+    console.error('Erro ao gerar PDF:', error);
+    const errorMsg = error?.message || 'Erro desconhecido';
+    setModal({ 
+      type: 'ALERT', 
+      date: '', 
+      rowMilitaryId: 0, 
+      message: `Ocorreu um erro ao gerar o PDF: ${errorMsg}. Verifique os mapeamentos e os dados das escalas.` 
+    });
+  }
+};
 
   const switchService = (id: number) => {
     if (id === activeServiceId) return;
@@ -293,10 +547,12 @@ export default function App() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
         services,
         activeServiceId,
-        activeTab
+        activeTab,
+        signatureData,
+        exportMappings
       }));
     }
-  }, [services, activeServiceId, activeTab]);
+  }, [services, activeServiceId, activeTab, signatureData, exportMappings]);
 
   // Generate Roster
   const roster = useMemo(() => {
@@ -343,8 +599,8 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [activeTab]);
 
-  const handleAddMilitary = (name: string, quarto: number = 1, antiguidade: number = 1) => {
-    setMilitares([...militares, { id: nextIds.military, name, quarto, antiguidade }]);
+  const handleAddMilitary = (name: string, posto: string = '', especialidade: string = '', quarto: number = 1, antiguidade: number = 1) => {
+    setMilitares([...militares, { id: nextIds.military, name, posto, especialidade, quarto, antiguidade }]);
     setNextIds({ ...nextIds, military: nextIds.military + 1 });
   };
 
@@ -354,8 +610,8 @@ export default function App() {
     setManualSwaps([]); // Reset swaps to avoid inconsistency
   };
 
-  const handleUpdateMilitary = (id: number, name: string, quarto: number, antiguidade: number) => {
-    setMilitares(militares.map(m => m.id === id ? { ...m, name, quarto, antiguidade } : m));
+  const handleUpdateMilitary = (id: number, name: string, posto: string, especialidade: string, quarto: number, antiguidade: number) => {
+    setMilitares(militares.map(m => m.id === id ? { ...m, name, posto, especialidade, quarto, antiguidade } : m));
   };
 
   const handleAddStatus = (period: Omit<StatusPeriod, 'id'>) => {
@@ -569,6 +825,13 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-4">
+            <button 
+              onClick={openDailyExport}
+              className="px-5 py-2.5 bg-white/5 border border-white/10 text-text-main rounded-xl text-xs font-black hover:bg-white/10 transition-all flex items-center gap-2"
+            >
+              <FileText className="w-4 h-4" />
+              Detalhe Diário (PDF)
+            </button>
             <button 
               onClick={exportExcel}
               className="px-5 py-2.5 bg-accent text-bg-main rounded-xl text-xs font-black hover:brightness-110 transition-all shadow-lg brass-glow"
@@ -1103,6 +1366,106 @@ export default function App() {
                 EXCLUIR
               </button>
             </div>
+          </div>
+        )}
+
+        {modal?.type === 'DAILY_EXPORT' && (
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-2">
+              <label className="label-tech">Data do Detalhe</label>
+              <input 
+                type="date" 
+                value={modal.date}
+                onChange={(e) => setModal({ ...modal, date: e.target.value })}
+                className="w-full bg-bg-main border border-white/10 rounded-xl px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main"
+              />
+            </div>
+
+            <div className="flex flex-col gap-4">
+              <h4 className="label-tech border-b border-white/5 pb-2">Mapeamento de Escalas</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
+                {[
+                  { key: 'fielAux', label: 'Fiel das Auxiliares' },
+                  { key: 'eletrlux', label: 'Eletricista (P/ Auxiliares)' },
+                  { key: 'patrulhaCav', label: 'Patrulha do CAV' },
+                  { key: 'supervisorMaq', label: 'Supervisor da Máquina' },
+                  { key: 'fielCav', label: 'Fiel de CAV' },
+                  { key: 'supervisorMO', label: 'Supervisor "MO"' },
+                  { key: 'supervisorEL', label: 'Supervisor "EL"' },
+                  { key: 'caboDia', label: 'Cabo de Dia' },
+                ].map(item => (
+                  <div key={item.key} className="flex flex-col gap-1">
+                    <label className={cn(
+                      "text-[10px] uppercase font-bold transition-colors",
+                      exportMappings[item.key] ? "text-accent" : "text-text-muted"
+                    )}>
+                      {item.label}
+                    </label>
+                    <select 
+                      value={exportMappings[item.key] || ''}
+                      onChange={(e) => setExportMappings({ ...exportMappings, [item.key]: e.target.value ? Number(e.target.value) : null })}
+                      className={cn(
+                        "bg-bg-main border rounded-lg px-3 py-2 text-xs text-text-main focus:ring-1 focus:ring-accent outline-none transition-all",
+                        exportMappings[item.key] ? "border-accent/30 bg-accent/5" : "border-white/10"
+                      )}
+                    >
+                      <option value="">Não Escalar</option>
+                      {services.map(s => (
+                        <option key={s.id} value={s.id}>{s.name} ({s.militares.length} militares)</option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-4">
+              <h4 className="label-tech border-b border-white/5 pb-2">Assinaturas</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-2">
+                  <label className="text-[10px] uppercase font-bold text-text-muted">Chefe do Dept.</label>
+                  <input 
+                    type="text" 
+                    placeholder="Nome Completo"
+                    value={signatureData.chefe.name}
+                    onChange={(e) => setSignatureData({ ...signatureData, chefe: { ...signatureData.chefe, name: e.target.value } })}
+                    className="bg-bg-main border border-white/10 rounded-lg px-3 py-2 text-xs text-text-main"
+                  />
+                  <input 
+                    type="text" 
+                    placeholder="Posto/Grad."
+                    value={signatureData.chefe.rank}
+                    onChange={(e) => setSignatureData({ ...signatureData, chefe: { ...signatureData.chefe, rank: e.target.value } })}
+                    className="bg-bg-main border border-white/10 rounded-lg px-3 py-2 text-[10px] text-text-muted"
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-[10px] uppercase font-bold text-text-muted">Detalhista</label>
+                  <input 
+                    type="text" 
+                    placeholder="Nome Completo"
+                    value={signatureData.detalhista.name}
+                    onChange={(e) => setSignatureData({ ...signatureData, detalhista: { ...signatureData.detalhista, name: e.target.value } })}
+                    className="bg-bg-main border border-white/10 rounded-lg px-3 py-2 text-xs text-text-main"
+                  />
+                  <input 
+                    type="text" 
+                    placeholder="Posto/Grad."
+                    value={signatureData.detalhista.rank}
+                    onChange={(e) => setSignatureData({ ...signatureData, detalhista: { ...signatureData.detalhista, rank: e.target.value } })}
+                    className="bg-bg-main border border-white/10 rounded-lg px-3 py-2 text-[10px] text-text-muted"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <button 
+              onClick={handleDailyExport}
+              className="w-full py-4 bg-accent text-bg-main rounded-2xl text-sm font-black hover:brightness-110 transition-all flex items-center justify-center gap-2 shadow-lg brass-glow"
+            >
+              <FileText className="w-4 h-4" />
+              Gerar PDF Detalhado
+            </button>
           </div>
         )}
 

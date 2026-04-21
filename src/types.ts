@@ -17,6 +17,8 @@ export type RosterModel =
 export interface Military {
   id: number;
   name: string;
+  posto?: string; // Ex: CB, 1SG, MN
+  especialidade?: string; // Ex: MO, EL, MP
   quarto?: number; // 1, 2, 3, 4
   antiguidade: number; // 1 = Mais Antigo, higher = Mais Moderno
 }

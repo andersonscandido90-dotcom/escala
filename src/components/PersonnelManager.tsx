@@ -4,9 +4,9 @@ import { UserPlus, Trash2, Edit2 } from 'lucide-react';
 
 interface PersonnelManagerProps {
   militares: Military[];
-  onAdd: (name: string, quarto: number, antiguidade: number) => void;
+  onAdd: (name: string, posto: string, especialidade: string, quarto: number, antiguidade: number) => void;
   onRemove: (id: number) => void;
-  onUpdate: (id: number, name: string, quarto: number, antiguidade: number) => void;
+  onUpdate: (id: number, name: string, posto: string, especialidade: string, quarto: number, antiguidade: number) => void;
 }
 
 export const PersonnelManager: React.FC<PersonnelManagerProps> = ({ 
@@ -16,18 +16,24 @@ export const PersonnelManager: React.FC<PersonnelManagerProps> = ({
   onUpdate 
 }) => {
   const [newName, setNewName] = useState('');
+  const [newPosto, setNewPosto] = useState('');
+  const [newEspecialidade, setNewEspecialidade] = useState('');
   const [newQuarto, setNewQuarto] = useState(1);
   const [newAntiguidade, setNewAntiguidade] = useState(militares.length + 1);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editName, setEditName] = useState('');
+  const [editPosto, setEditPosto] = useState('');
+  const [editEspecialidade, setEditEspecialidade] = useState('');
   const [editQuarto, setEditQuarto] = useState(1);
   const [editAntiguidade, setEditAntiguidade] = useState(1);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (newName.trim()) {
-      onAdd(newName.trim(), newQuarto, newAntiguidade);
+      onAdd(newName.trim(), newPosto.trim(), newEspecialidade.trim(), newQuarto, newAntiguidade);
       setNewName('');
+      setNewPosto('');
+      setNewEspecialidade('');
       setNewQuarto(1);
       setNewAntiguidade(militares.length + 2);
     }
@@ -35,7 +41,7 @@ export const PersonnelManager: React.FC<PersonnelManagerProps> = ({
 
   const handleUpdate = (id: number) => {
     if (editName.trim()) {
-      onUpdate(id, editName.trim(), editQuarto, editAntiguidade);
+      onUpdate(id, editName.trim(), editPosto.trim(), editEspecialidade.trim(), editQuarto, editAntiguidade);
     }
     setEditingId(null);
   };
@@ -46,13 +52,33 @@ export const PersonnelManager: React.FC<PersonnelManagerProps> = ({
         <div className="label-tech mb-1">Módulo de Cadastro</div>
         <h3 className="text-xl font-display font-black text-text-main tracking-tight mb-6">Adicionar Novo Militar</h3>
         <form onSubmit={handleSubmit} className="flex flex-wrap gap-4 items-end">
+          <div className="w-32 flex flex-col gap-2">
+            <label className="label-tech">Posto / Grad.</label>
+            <input
+              type="text"
+              value={newPosto}
+              onChange={(e) => setNewPosto(e.target.value.toUpperCase())}
+              placeholder="Ex: CB"
+              className="w-full bg-bg-main border border-white/10 rounded-xl px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main"
+            />
+          </div>
+          <div className="w-32 flex flex-col gap-2">
+            <label className="label-tech">Especialidade</label>
+            <input
+              type="text"
+              value={newEspecialidade}
+              onChange={(e) => setNewEspecialidade(e.target.value.toUpperCase())}
+              placeholder="Ex: MO"
+              className="w-full bg-bg-main border border-white/10 rounded-xl px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main"
+            />
+          </div>
           <div className="flex-1 min-w-[200px] flex flex-col gap-2">
-            <label className="label-tech">Nome do Militar</label>
+            <label className="label-tech">Nome de Guerra</label>
             <input
               type="text"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              placeholder="Nome Completo do Militar"
+              placeholder="Nome do Militar"
               className="w-full bg-bg-main border border-white/10 rounded-xl px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main"
             />
           </div>
@@ -98,7 +124,9 @@ export const PersonnelManager: React.FC<PersonnelManagerProps> = ({
             <thead>
               <tr className="bg-white/5 border-b border-white/5 text-text-muted">
                 <th className="p-6 text-left label-tech">ID</th>
-                <th className="p-6 text-left label-tech">Nome do Militar</th>
+                <th className="p-6 text-left label-tech w-28">P / G</th>
+                <th className="p-6 text-left label-tech w-28">Espec.</th>
+                <th className="p-6 text-left label-tech">Militar</th>
                 <th className="p-6 text-left label-tech">Quarto</th>
                 <th className="p-6 text-left label-tech">Antig.</th>
                 <th className="p-6 text-right label-tech">Ações</th>
@@ -108,6 +136,30 @@ export const PersonnelManager: React.FC<PersonnelManagerProps> = ({
               {militares.map((m, idx) => (
                 <tr key={m.id} className="group hover:bg-white/5 transition-colors border-b border-white/5 last:border-0">
                   <td className="p-6 text-text-muted font-bold">{String(idx + 1).padStart(2, '0')}</td>
+                  <td className="p-6 font-bold text-accent">
+                    {editingId === m.id ? (
+                      <input
+                        type="text"
+                        value={editPosto}
+                        onChange={(e) => setEditPosto(e.target.value.toUpperCase())}
+                        className="bg-bg-main border border-accent/30 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-accent text-text-main w-full"
+                      />
+                    ) : (
+                      m.posto || '—'
+                    )}
+                  </td>
+                  <td className="p-6 font-bold text-accent">
+                    {editingId === m.id ? (
+                      <input
+                        type="text"
+                        value={editEspecialidade}
+                        onChange={(e) => setEditEspecialidade(e.target.value.toUpperCase())}
+                        className="bg-bg-main border border-accent/30 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-accent text-text-main w-full"
+                      />
+                    ) : (
+                      m.especialidade || '—'
+                    )}
+                  </td>
                   <td className="p-6">
                     {editingId === m.id ? (
                       <input
@@ -188,6 +240,8 @@ export const PersonnelManager: React.FC<PersonnelManagerProps> = ({
                             onClick={() => {
                               setEditingId(m.id);
                               setEditName(m.name);
+                              setEditPosto(m.posto || '');
+                              setEditEspecialidade(m.especialidade || '');
                               setEditQuarto(m.quarto || 1);
                               setEditAntiguidade(m.antiguidade);
                             }}
