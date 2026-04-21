@@ -330,6 +330,35 @@ export default function App() {
     };
 
     const getRetem = (srvId: number | null | undefined, date: string, shiftIndex: number = 0) => {
+      const data = getRosterData(srvId);
+      if (!data) return null;
+      
+      const duty = getShiftInfo(srvId, date, shiftIndex);
+      if (!duty) {
+        const nextDay = format(addDays(parseISO(date), 1), 'yyyy-MM-dd');
+        return getShiftInfo(srvId, nextDay, shiftIndex);
+      }
+
+      const isQuartos = data.srv.rosterModel.startsWith('QUARTOS');
+      
+      if (isQuartos && duty.quarto) {
+        // Find the next available military in the same quarter
+        const sameQuarter = [...data.srv.militares]
+          .filter(m => m.quarto === duty.quarto)
+          .sort((a, b) => b.antiguidade - a.antiguidade);
+        
+        const currentIdx = sameQuarter.findIndex(m => m.id === duty.id);
+        if (currentIdx !== -1) {
+          for (let i = 1; i < sameQuarter.length; i++) {
+            const candidate = sameQuarter[(currentIdx + i) % sameQuarter.length];
+            // If the person is active and not impeded, they are the standby
+            if (!isMilitaryImpeded(candidate.id, date, data.srv.statusPeriods || [])) {
+               return candidate;
+            }
+          }
+        }
+      }
+
       const nextDay = format(addDays(parseISO(date), 1), 'yyyy-MM-dd');
       return getShiftInfo(srvId, nextDay, shiftIndex);
     };
