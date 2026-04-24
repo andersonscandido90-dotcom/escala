@@ -827,12 +827,12 @@ export default function App() {
     <div className="min-h-screen bg-bg-main text-text-main font-sans selection:bg-accent">
       {/* Sidebar */}
       <aside className="fixed left-0 top-0 h-full w-[260px] bg-bg-card border-r border-white/5 p-8 z-50 hidden lg:flex flex-col shadow-2xl overflow-y-auto custom-scrollbar">
-        <div className="flex flex-col gap-1 mb-8">
-          <div className="flex items-center gap-2 mb-2">
+        <div className="flex flex-col items-center gap-1 mb-8 text-center">
+          <div className="mb-3">
             {logos.ship ? (
-              <img src={logos.ship} alt="Ship" className="w-10 h-10 object-contain" />
+              <img src={logos.ship} alt="Ship" className="w-16 h-16 object-contain mx-auto" />
             ) : logos.navy ? (
-              <img src={logos.navy} alt="Navy" className="w-10 h-10 object-contain" />
+              <img src={logos.navy} alt="Navy" className="w-16 h-16 object-contain mx-auto" />
             ) : null}
           </div>
           <div className="text-accent font-black text-2xl tracking-tighter leading-none">
