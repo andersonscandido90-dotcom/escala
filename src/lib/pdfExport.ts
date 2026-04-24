@@ -77,22 +77,54 @@ export const exportDailyDetailPDF = (data: DailyExportData) => {
     startY: 32,
     head: [['SERVIÇO', '08 - 12h / 20 - 24h', '12 - 16h / 00 - 04h', '16 - 20h / 04 - 08h']],
     body: [
-      ['FIEL DAS AUXILIARES', ...data.fielAux.map(formatName)],
+      [
+        'FIEL DAS AUXILIARES', 
+        formatName(data.fielAux[0]), 
+        formatName(data.fielAux[1]), 
+        formatName(data.fielAux[2])
+      ],
       ['RETÉNS:', ...data.retenFielAux.map(formatName)],
       ['ACOMPANHANDO', ...data.acompFielAux.map(formatName)],
-      ['PATRULHA DO CAV', ...data.patrulhaCav.map(formatName)],
+      [
+        'PATRULHA DO CAV', 
+        formatName(data.patrulhaCav[0]), 
+        formatName(data.patrulhaCav[1]), 
+        formatName(data.patrulhaCav[2])
+      ],
       ['RETÉM:', ...data.retenPatrulhaCav.map(formatName)],
       ['ACOMPANHANDO', ...data.acompPatrulhaCav.map(formatName)],
     ],
     theme: 'grid',
-    styles: { fontSize: 7, halign: 'center', cellPadding: 2 },
-    headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
-    columnStyles: { 0: { halign: 'left', fontStyle: 'bold', cellWidth: 40 } }
+    styles: { fontSize: 8.5, halign: 'center', cellPadding: 2, textColor: [0, 0, 0] },
+    headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold', fontSize: 8.5 },
+    columnStyles: { 0: { halign: 'left', fontStyle: 'bold', cellWidth: 40, fontSize: 8.5 } },
+    didDrawCell: (hookData) => {
+      if (hookData.section === 'body') {
+        const rowIdx = hookData.row.index;
+        const colIdx = hookData.column.index;
+        let maskText = '';
+        if (rowIdx === 0) { // FIEL DAS AUXILIARES
+          if (colIdx === 2) maskText = '46 a 54';
+          if (colIdx === 3) maskText = '64 a 72';
+        } else if (rowIdx === 3) { // PATRULHA DO CAV
+          if (colIdx === 2) maskText = '55 a 63';
+          if (colIdx === 3) maskText = '73 a 81';
+        }
+
+        if (maskText) {
+          doc.setFontSize(6);
+          doc.setTextColor(100);
+          const x = hookData.cell.x + hookData.cell.width - 1.5;
+          const y = hookData.cell.y + hookData.cell.height - 1.5;
+          doc.text(maskText, x, y, { align: 'right' });
+        }
+      }
+    }
   });
 
   // Table 2: Daily Service
   autoTable(doc, {
-    startY: (doc as any).lastAutoTable.finalY + 5,
+    startY: (doc as any).lastAutoTable.finalY + 3,
     head: [['SERVIÇO', 'MILITAR']],
     body: [
       ['SUPERVISOR DA MÁQUINA', formatName(data.supervisorMaq)],
@@ -109,9 +141,9 @@ export const exportDailyDetailPDF = (data: DailyExportData) => {
       ['ACOMPANHANDO', formatName(data.acompEL)],
     ],
     theme: 'grid',
-    styles: { fontSize: 7, halign: 'center', cellPadding: 2 },
-    headStyles: { fillColor: [200, 200, 200], textColor: [0, 0, 0], fontStyle: 'bold' },
-    columnStyles: { 0: { halign: 'left', fontStyle: 'bold', cellWidth: 60 } }
+    styles: { fontSize: 8, halign: 'center', cellPadding: 1.5, textColor: [0, 0, 0] },
+    headStyles: { fillColor: [200, 200, 200], textColor: [0, 0, 0], fontStyle: 'bold', fontSize: 8 },
+    columnStyles: { 0: { halign: 'left', fontStyle: 'bold', cellWidth: 55, fontSize: 8 } }
   });
 
   // Cabo de dia section
@@ -122,44 +154,45 @@ export const exportDailyDetailPDF = (data: DailyExportData) => {
       ['CABO DE DIA', formatName(data.caboDia)],
     ],
     theme: 'grid',
-    styles: { fontSize: 7, halign: 'center' },
-    headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0] },
-    columnStyles: { 0: { halign: 'left', fontStyle: 'bold', cellWidth: 60 } }
+    styles: { fontSize: 8, halign: 'center', cellPadding: 1.5, textColor: [0, 0, 0] },
+    headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontSize: 8 },
+    columnStyles: { 0: { halign: 'left', fontStyle: 'bold', cellWidth: 55, fontSize: 8 } }
   });
 
   const finalY = (doc as any).lastAutoTable.finalY;
 
   // Signatures
-  doc.setFontSize(7);
-  doc.text('__________________________________________', 50, finalY + 20, { align: 'center' });
-  doc.text(data.chefeDept.name, 50, finalY + 24, { align: 'center' });
-  doc.text(data.chefeDept.rank, 50, finalY + 27, { align: 'center' });
-  doc.text(data.chefeDept.title, 50, finalY + 30, { align: 'center' });
+  doc.setFontSize(8);
+  doc.text('__________________________________________', 50, finalY + 12, { align: 'center' });
+  doc.text(data.chefeDept.name, 50, finalY + 16, { align: 'center' });
+  doc.text(data.chefeDept.rank, 50, finalY + 19, { align: 'center' });
+  doc.text(data.chefeDept.title, 50, finalY + 22, { align: 'center' });
 
-  doc.text('__________________________________________', pageWidth - 50, finalY + 20, { align: 'center' });
-  doc.text(data.detalhista.name, pageWidth - 50, finalY + 24, { align: 'center' });
-  doc.text(data.detalhista.rank, pageWidth - 50, finalY + 27, { align: 'center' });
-  doc.text(data.detalhista.title, pageWidth - 50, finalY + 30, { align: 'center' });
+  doc.text('__________________________________________', pageWidth - 50, finalY + 12, { align: 'center' });
+  doc.text(data.detalhista.name, pageWidth - 50, finalY + 16, { align: 'center' });
+  doc.text(data.detalhista.rank, pageWidth - 50, finalY + 19, { align: 'center' });
+  doc.text(data.detalhista.title, pageWidth - 50, finalY + 22, { align: 'center' });
 
   // BOYS
-  doc.text('BOYS:', 10, finalY + 45);
-  const boysRows = data.boys || [[null, null, null], [null, null, null]];
+  doc.setFontSize(8);
+  doc.text('BOYS:', 10, finalY + 30);
+  const boysRows = data.boys || [[null, null, null], [null, null, null], [null, null, null], [null, null, null]];
   autoTable(doc, {
-    startY: finalY + 48,
+    startY: finalY + 32,
     head: [['08 - 10h', '10 - 12h', '12 - 14h']],
     body: boysRows.slice(0, 2).map(row => row.map(formatName)),
     theme: 'grid',
-    styles: { fontSize: 7, halign: 'center' },
-    headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0] }
+    styles: { fontSize: 8, halign: 'center', cellPadding: 1.5, textColor: [0, 0, 0] },
+    headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontSize: 8 }
   });
 
   autoTable(doc, {
-    startY: (doc as any).lastAutoTable.finalY + 2,
+    startY: (doc as any).lastAutoTable.finalY + 1.5,
     head: [['14 - 16h', '16 - 18h', '18 - 20h']],
     body: boysRows.slice(2, 4).map(row => row.map(formatName)),
     theme: 'grid',
-    styles: { fontSize: 7, halign: 'center' },
-    headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0] }
+    styles: { fontSize: 8, halign: 'center', cellPadding: 1.5, textColor: [0, 0, 0] },
+    headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontSize: 8 }
   });
 
   doc.save(`detalhe_servico_${data.date}.pdf`);
