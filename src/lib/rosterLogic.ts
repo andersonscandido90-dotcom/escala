@@ -37,8 +37,19 @@ export function getStatusAtivo(militaryId: number, dateStr: string, statusPeriod
 }
 
 export function isMilitaryImpeded(militaryId: number, dateStr: string, statusPeriods: StatusPeriod[]): boolean {
-  const status = getStatusAtivo(militaryId, dateStr, statusPeriods);
-  return !!status && (STATUS_IMPEDITIVOS.includes(status) || status === 'ACOMPANHANDO');
+  const currentStatus = getStatusAtivo(militaryId, dateStr, statusPeriods);
+  if (currentStatus && (STATUS_IMPEDITIVOS.includes(currentStatus) || currentStatus === 'ACOMPANHANDO')) {
+    return true;
+  }
+
+  // Pre-vacation rule: The day before a vacation is also an impediment day
+  const nextDay = format(addDays(parseISO(dateStr), 1), 'yyyy-MM-dd');
+  const nextStatus = getStatusAtivo(militaryId, nextDay, statusPeriods);
+  if (nextStatus === 'FERIAS') {
+    return true;
+  }
+
+  return false;
 }
 
 export function getShipStatus(dateStr: string, shipPeriods: ShipPeriod[]) {

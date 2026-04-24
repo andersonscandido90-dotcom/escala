@@ -366,7 +366,14 @@ export default function App() {
     const getAcompForScale = (srvId: number | null | undefined, date: string) => {
       const srv = services.find(s => s.id === srvId);
       if (!srv) return [];
-      return srv.militares.filter(m => getStatusAtivo(m.id, date, srv.statusPeriods || []) === 'ACOMPANHANDO');
+      return srv.militares.filter(m => {
+        const isAcompToday = getStatusAtivo(m.id, date, srv.statusPeriods || []) === 'ACOMPANHANDO';
+        if (!isAcompToday) return false;
+        
+        // Rule: cannot be Acompanhante on the day before vacation
+        const nextDay = format(addDays(parseISO(date), 1), 'yyyy-MM-dd');
+        return getStatusAtivo(m.id, nextDay, srv.statusPeriods || []) !== 'FERIAS';
+      });
     };
 
     const data: DailyExportData = {
