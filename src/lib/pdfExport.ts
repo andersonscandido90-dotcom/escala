@@ -28,6 +28,8 @@ export interface DailyExportData {
   boys: (Military | null)[][]; // grid
   chefeDept: { name: string, rank: string, title: string };
   detalhista: { name: string, rank: string, title: string };
+  navyLogo?: string;
+  shipLogo?: string;
 }
 
 export const exportDailyDetailPDF = (data: DailyExportData) => {
@@ -45,6 +47,20 @@ export const exportDailyDetailPDF = (data: DailyExportData) => {
   };
 
   // Header
+  // Drawings logos if present
+  if (data.navyLogo) {
+    try {
+      // Navy Logo on the Left
+      doc.addImage(data.navyLogo, 'PNG', 10, 5, 18, 18);
+    } catch(e) { console.error('Error drawing navy logo', e); }
+  }
+  if (data.shipLogo) {
+    try {
+      // Ship Logo on the Right
+      doc.addImage(data.shipLogo, 'PNG', pageWidth - 28, 5, 18, 18);
+    } catch(e) { console.error('Error drawing ship logo', e); }
+  }
+
   doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
   doc.text('MARINHA DO BRASIL', pageWidth / 2, 10, { align: 'center' });

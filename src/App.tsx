@@ -80,6 +80,10 @@ export default function App() {
     detalhista: { name: 'ANDRE VINICIUS FERNANDES DA SILVA', rank: 'Terceiro-Sargento (MO)', title: 'Detalhista do Departamento de Máquinas' }
   });
   const [exportMappings, setExportMappings] = useState<Record<string, number | null>>({});
+  const [logos, setLogos] = useState({
+    navy: '', // base64
+    ship: ''  // base64
+  });
 
   // Manage body scroll in full screen
   useEffect(() => {
@@ -148,6 +152,9 @@ export default function App() {
         }
         if (data.exportMappings) {
           setExportMappings(data.exportMappings);
+        }
+        if (data.logos) {
+          setLogos(data.logos);
         }
       } catch (e) {
         console.error('Error loading data', e);
@@ -394,6 +401,8 @@ export default function App() {
       retenMO: null, acompMO: null,
       retenEL: null, acompEL: null,
       boys: [[null, null, null], [null, null, null], [null, null, null], [null, null, null]],
+      navyLogo: logos.navy,
+      shipLogo: logos.ship,
       chefeDept: signatureData.chefe,
       detalhista: signatureData.detalhista
     };
@@ -503,6 +512,71 @@ export default function App() {
   }
 };
 
+  const exportFullData = () => {
+    const data = {
+      services,
+      activeServiceId,
+      activeTab,
+      signatureData,
+      exportMappings,
+      logos
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `backup_escala_${format(new Date(), 'yyyy-MM-dd_HHmm')}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const importFullData = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = JSON.parse(event.target?.result as string);
+        if (data.services) {
+          // Sync current service before replacing
+          setServices(data.services);
+          if (data.activeServiceId) {
+            setActiveServiceId(data.activeServiceId);
+            const active = data.services.find((s: any) => s.id === data.activeServiceId);
+            if (active) loadServiceData(active);
+          }
+          if (data.activeTab) setActiveTab(data.activeTab);
+          if (data.signatureData) setSignatureData(data.signatureData);
+          if (data.exportMappings) setExportMappings(data.exportMappings);
+          if (data.logos) setLogos(data.logos);
+          setModal({ type: 'ALERT', date: '', rowMilitaryId: 0, message: "Dados importados com sucesso!" });
+        }
+      } catch (err) {
+        setModal({ type: 'ALERT', date: '', rowMilitaryId: 0, message: "Erro ao importar arquivo. Certifique-se de que é um JSON válido." });
+      }
+    };
+    reader.readAsText(file);
+    // Reset input
+    e.target.value = '';
+  };
+
+  const handleLogoUpload = (type: 'navy' | 'ship', e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string;
+      setLogos(prev => ({ ...prev, [type]: base64 }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeLogo = (type: 'navy' | 'ship') => {
+    setLogos(prev => ({ ...prev, [type]: '' }));
+  };
+
   const switchService = (id: number) => {
     if (id === activeServiceId) return;
     
@@ -585,7 +659,8 @@ export default function App() {
         activeServiceId,
         activeTab,
         signatureData,
-        exportMappings
+        exportMappings,
+        logos
       }));
     }
   }, [services, activeServiceId, activeTab, signatureData, exportMappings]);
@@ -751,8 +826,15 @@ export default function App() {
   return (
     <div className="min-h-screen bg-bg-main text-text-main font-sans selection:bg-accent">
       {/* Sidebar */}
-      <aside className="fixed left-0 top-0 h-full w-[260px] bg-bg-card border-r border-white/5 p-8 z-50 hidden lg:flex flex-col shadow-2xl">
-        <div className="flex flex-col gap-1 mb-12">
+      <aside className="fixed left-0 top-0 h-full w-[260px] bg-bg-card border-r border-white/5 p-8 z-50 hidden lg:flex flex-col shadow-2xl overflow-y-auto custom-scrollbar">
+        <div className="flex flex-col gap-1 mb-8">
+          <div className="flex items-center gap-2 mb-2">
+            {logos.ship ? (
+              <img src={logos.ship} alt="Ship" className="w-10 h-10 object-contain" />
+            ) : logos.navy ? (
+              <img src={logos.navy} alt="Navy" className="w-10 h-10 object-contain" />
+            ) : null}
+          </div>
           <div className="text-accent font-black text-2xl tracking-tighter leading-none">
             NAM ATLÂNTICO
           </div>
@@ -842,9 +924,17 @@ export default function App() {
       <main className="lg:ml-[260px] p-10 flex flex-col gap-8 technical-grid min-h-screen">
         {/* Header */}
         <header className="flex items-center justify-between glass-panel p-6 rounded-3xl border border-white/5 shadow-2xl">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-accent/10 rounded-2xl border border-accent/20">
-              <ShieldAlert className="w-6 h-6 text-accent" />
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-3">
+              {logos.ship ? (
+                <img src={logos.ship} alt="Ship" className="w-14 h-14 object-contain" />
+              ) : logos.navy ? (
+                <img src={logos.navy} alt="Navy" className="w-14 h-14 object-contain" />
+              ) : (
+                <div className="p-3 bg-accent/10 rounded-2xl border border-accent/20">
+                  <ShieldAlert className="w-6 h-6 text-accent" />
+                </div>
+              )}
             </div>
             <div>
               <div className="flex items-center gap-2 mb-1">
@@ -883,7 +973,12 @@ export default function App() {
             <Dashboard 
               militares={militares} 
               roster={roster} 
-              statusPeriods={statusPeriods} 
+              statusPeriods={statusPeriods}
+              logos={logos}
+              onLogoUpload={handleLogoUpload}
+              onRemoveLogo={removeLogo}
+              onExportBackup={exportFullData}
+              onImportBackup={importFullData}
             />
           )}
 
