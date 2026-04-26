@@ -94,7 +94,7 @@ export const exportDailyDetailPDF = (data: DailyExportData) => {
       ],
       [
         { content: 'ACOMPANHANDO:', styles: { halign: 'left', fontStyle: 'bold' } },
-        { content: data.acompFielAux.filter(m => m).map(formatName).join(' - ') || 'NADA CONSTA', colSpan: 5 }
+        { content: data.acompFielAux.filter(m => m).map(formatName).join(' - ') || '—', colSpan: 5 }
       ],
       [
         { content: 'PATRULHA DO CAV', styles: { halign: 'left', fontStyle: 'bold' } },
@@ -114,7 +114,7 @@ export const exportDailyDetailPDF = (data: DailyExportData) => {
       ],
       [
         { content: 'ACOMPANHANDO:', styles: { halign: 'left', fontStyle: 'bold' } },
-        { content: data.acompPatrulhaCav.filter(m => m).map(formatName).join(' - ') || 'NADA CONSTA', colSpan: 5 }
+        { content: data.acompPatrulhaCav.filter(m => m).map(formatName).join(' - ') || '—', colSpan: 5 }
       ],
     ],
     theme: 'grid',
