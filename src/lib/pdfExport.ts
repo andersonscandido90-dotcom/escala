@@ -208,22 +208,22 @@ export const exportDailyDetailPDF = (data: DailyExportData) => {
   const sigY = pageHeight - 25;
   doc.setLineWidth(0.2);
   
-  // Left signature
+  // Left signature (Detalhista)
   doc.line(20, sigY, midPoint - 20, sigY);
   doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
-  doc.text(data.chefeDept.name, (20 + midPoint - 20) / 2, sigY + 5, { align: 'center' });
+  doc.text(data.detalhista.name, (20 + midPoint - 20) / 2, sigY + 5, { align: 'center' });
   doc.setFont('helvetica', 'normal');
-  doc.text(data.chefeDept.rank, (20 + midPoint - 20) / 2, sigY + 9, { align: 'center' });
-  doc.text(data.chefeDept.title, (20 + midPoint - 20) / 2, sigY + 13, { align: 'center' });
+  doc.text(data.detalhista.rank, (20 + midPoint - 20) / 2, sigY + 9, { align: 'center' });
+  doc.text(data.detalhista.title, (20 + midPoint - 20) / 2, sigY + 13, { align: 'center' });
 
-  // Right signature
+  // Right signature (Chefe)
   doc.line(midPoint + 20, sigY, pageWidth - 20, sigY);
   doc.setFont('helvetica', 'bold');
-  doc.text(data.detalhista.name, (midPoint + 20 + pageWidth - 20) / 2, sigY + 5, { align: 'center' });
+  doc.text(data.chefeDept.name, (midPoint + 20 + pageWidth - 20) / 2, sigY + 5, { align: 'center' });
   doc.setFont('helvetica', 'normal');
-  doc.text(data.detalhista.rank, (midPoint + 20 + pageWidth - 20) / 2, sigY + 9, { align: 'center' });
-  doc.text(data.detalhista.title, (midPoint + 20 + pageWidth - 20) / 2, sigY + 13, { align: 'center' });
+  doc.text(data.chefeDept.rank, (midPoint + 20 + pageWidth - 20) / 2, sigY + 9, { align: 'center' });
+  doc.text(data.chefeDept.title, (midPoint + 20 + pageWidth - 20) / 2, sigY + 13, { align: 'center' });
 
   doc.save(`detalhe_servico_${data.date}.pdf`);
 };

@@ -76,7 +76,7 @@ export default function App() {
   const [newServiceName, setNewServiceName] = useState("");
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [signatureData, setSignatureData] = useState({
-    chefe: { name: 'FELIPE TEIXEIRA MOLINARI GENTIL', rank: 'Capitão de Corveta', title: 'Chefe do Departamento de Máquinas' },
+    chefe: { name: 'BRUNO AFONSO PINTO', rank: 'Capitão de Fragata', title: 'Chefe do Departamento de Máquinas' },
     detalhista: { name: 'ANDRE VINICIUS FERNANDES DA SILVA', rank: 'Terceiro-Sargento (MO)', title: 'Detalhista do Departamento de Máquinas' }
   });
   const [exportMappings, setExportMappings] = useState<Record<string, number | null>>({});
