@@ -65,7 +65,7 @@ export const exportDailyDetailPDF = (data: DailyExportData) => {
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.text('MARINHA DO BRASIL', pageWidth / 2, 10, { align: 'center' });
-  doc.text('NAVIO-AERÓDROMO MULTIPROPÓSITO ATLÂNTICO', pageWidth / 2, 15, { align: 'center' });
+  doc.text('NAVIO AERÓDROMO MULTIPROPÓSITO ATLÂNTICO', pageWidth / 2, 15, { align: 'center' });
   doc.text('DETALHE DE SERVIÇO NO PORTO', pageWidth / 2, 20, { align: 'center' });
   
   doc.setFontSize(11);
