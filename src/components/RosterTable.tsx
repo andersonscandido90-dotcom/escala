@@ -131,7 +131,7 @@ export const RosterTable: React.FC<RosterTableProps> = ({
                                            'bg-red-500/20 text-red-400 border border-red-500/20';
                     
                     cellClass = cn(cellClass, navalStatusColor, "font-black text-[10px] uppercase tracking-tighter");
-                    content = <span className="animate-pulse-subtle">{STATUS_LABELS[statusAtivo]}</span>;
+                    content = <span className="animate-pulse-subtle">{STATUS_LABELS[statusAtivo] || statusAtivo}</span>;
                   } else {
                     content = <span className="text-white/5">—</span>;
                   }

@@ -114,7 +114,7 @@ export const StatusManager: React.FC<StatusManagerProps> = ({
                   p.type === 'CURSO' ? "bg-amber-500/10 text-amber-400 border-amber-500/20" :
                   "bg-red-500/10 text-red-400 border-red-500/20"
                 )}>
-                  {STATUS_LABELS[p.type]}
+                  {STATUS_LABELS[p.type] || p.type}
                 </span>
                 <div className="flex items-center gap-2 text-text-muted font-mono font-bold">
                   <Calendar className="w-3.5 h-3.5" />

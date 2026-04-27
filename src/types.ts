@@ -54,28 +54,22 @@ export interface RosterEntry {
   shift?: string;
 }
 
-export const STATUS_LABELS: Record<StatusType, string> = {
+export const STATUS_LABELS: Partial<Record<StatusType, string>> = {
   CURSO: 'Curso',
   FERIAS: 'Férias',
   DISPENSA_MEDICA: 'Médico',
   PATERNIDADE: 'Paternidade',
   LUTO: 'Luto',
   ACOMPANHANDO: 'Acompanhando',
-  NAVIO: 'Navio (Pausa)',
-  INDISPONIVEL: 'Indisponível',
-  SERVICO: 'Serviço',
 };
 
-export const STATUS_COLORS: Record<StatusType, string> = {
+export const STATUS_COLORS: Partial<Record<StatusType, string>> = {
   CURSO: 'bg-blue-500 text-white',
   FERIAS: 'bg-yellow-400 text-slate-900',
   DISPENSA_MEDICA: 'bg-red-500 text-white',
   PATERNIDADE: 'bg-pink-400 text-white',
   LUTO: 'bg-slate-600 text-white',
   ACOMPANHANDO: 'bg-purple-500 text-white',
-  NAVIO: 'bg-slate-400 text-slate-900',
-  INDISPONIVEL: 'bg-slate-200 text-slate-500',
-  SERVICO: 'bg-emerald-500 text-white',
 };
 
 export interface RosterService {
