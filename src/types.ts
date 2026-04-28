@@ -48,7 +48,8 @@ export interface ManualSwap {
 export interface RosterEntry {
   data: string;
   militaryId: number | null;
-  acompanhanteId: number | null;
+  acompanhanteIds?: number[]; // Support for multiple shadowers
+  acompanhanteId?: number | null; // Keep for backward compatibility if needed, but will prefer list
   status: StatusType;
   emNavio: boolean;
   shift?: string;

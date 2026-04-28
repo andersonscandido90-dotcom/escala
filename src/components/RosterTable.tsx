@@ -82,7 +82,7 @@ export const RosterTable: React.FC<RosterTableProps> = ({
                   const entry = dayEntries.find(e => e.militaryId === m.id) || dayEntries[0];
                   const statusAtivo = getStatusAtivo(m.id, dateStr, statusPeriods);
                   const isTitular = dayEntries.some(e => e.militaryId === m.id);
-                  const isAcompanhante = dayEntries.some(e => e.acompanhanteId === m.id);
+                  const isAcompanhante = dayEntries.some(e => e.militaryId !== m.id && ((e.acompanhanteIds && e.acompanhanteIds.includes(m.id)) || e.acompanhanteId === m.id));
                   const isNavioPausa = dayEntries.every(e => e.status === 'NAVIO');
                   const isVerm = isWeekend(parseISO(dateStr)) || holidayDates.includes(dateStr);
 
@@ -107,9 +107,13 @@ export const RosterTable: React.FC<RosterTableProps> = ({
                             {entry.shift}
                           </div>
                         )}
-                        {entry?.acompanhanteId && (
-                          <div className="text-[9px] font-bold opacity-90 truncate max-w-full bg-white/10 px-2 py-0.5 rounded-full">
-                            + {militares.find(mil => mil.id === entry.acompanhanteId)?.name.split(' ')[0]}
+                        {entry?.acompanhanteIds && entry.acompanhanteIds.length > 0 && (
+                          <div className="flex flex-col gap-0.5 mt-1">
+                            {entry.acompanhanteIds.map(aid => (
+                              <div key={aid} className="text-[8px] font-bold opacity-90 truncate max-w-[100px] bg-white/10 px-2 py-0.5 rounded-full">
+                                + {militares.find(mil => mil.id === aid)?.name.split(' ')[0]}
+                              </div>
+                            ))}
                           </div>
                         )}
                         <div className="absolute -right-4 -bottom-4 opacity-10">

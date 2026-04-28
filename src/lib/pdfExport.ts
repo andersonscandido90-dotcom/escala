@@ -8,23 +8,23 @@ export interface DailyExportData {
   date: string;
   fielAux: (Military | null)[]; // 3 shifts
   retenFielAux: (Military | null)[]; // 3 shifts
-  acompFielAux: (Military | null)[]; // 3 shifts
+  acompFielAux: (Military | null)[][]; // 3 shifts, each with multiple people
   patrulhaCav: (Military | null)[]; // 3 shifts
   retenPatrulhaCav: (Military | null)[]; // 3 shifts
-  acompPatrulhaCav: (Military | null)[]; // 3 shifts
+  acompPatrulhaCav: (Military | null)[][]; // 3 shifts, each with multiple people
   supervisorMaq: Military | null;
   fielCav: Military | null;
   supervisorMO: Military | null;
   supervisorEL: Military | null;
   caboDia: Military | null;
   retenMaq: Military | null;
-  acompMaq: Military | null;
+  acompMaq: (Military | null)[];
   retenCav: Military | null;
-  acompCav: Military | null;
+  acompCav: (Military | null)[];
   retenMO: Military | null;
-  acompMO: Military | null;
+  acompMO: (Military | null)[];
   retenEL: Military | null;
-  acompEL: Military | null;
+  acompEL: (Military | null)[];
   boys: (Military | null)[][]; // grid
   chefeDept: { name: string, rank: string, title: string };
   detalhista: { name: string, rank: string, title: string };
@@ -47,6 +47,12 @@ export const exportDailyDetailPDF = (data: DailyExportData) => {
     return `${p}${e} ${m.name}`.trim();
   };
 
+  const formatNameList = (list: (Military | null)[]) => {
+    const valid = list.filter(m => m);
+    if (valid.length === 0) return '—';
+    return valid.map(m => formatName(m)).join(' / ');
+  };
+
   // Header
   // Drawings logos if present
   if (data.navyLogo) {
@@ -65,7 +71,7 @@ export const exportDailyDetailPDF = (data: DailyExportData) => {
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.text('MARINHA DO BRASIL', pageWidth / 2, 10, { align: 'center' });
-  doc.text('NAVIO AERÓDROMO MULTIPROPÓSITO ATLÂNTICO', pageWidth / 2, 15, { align: 'center' });
+  doc.text('NAVIO-AERÓDROMO MULTIPROPÓSITO ATLÂNTICO', pageWidth / 2, 15, { align: 'center' });
   doc.text('DETALHE DE SERVIÇO NO PORTO', pageWidth / 2, 20, { align: 'center' });
   
   doc.setFontSize(11);
@@ -77,7 +83,7 @@ export const exportDailyDetailPDF = (data: DailyExportData) => {
     head: [['SERVIÇO', '08 - 12h / 20 - 24h', '12 - 16h / 00 - 04h', 'MÁSCARAS', '16 - 20h / 04 - 08h', 'MÁSCARAS']],
     body: [
       [
-        { content: 'FIEL DAS AUXILIARES', styles: { halign: 'left', fontStyle: 'bold' } },
+        { content: 'FIEL DAS AUXILIARES', styles: { fontStyle: 'bold' } },
         formatName(data.fielAux[0]), 
         formatName(data.fielAux[1]), 
         '46 a 54',
@@ -85,7 +91,7 @@ export const exportDailyDetailPDF = (data: DailyExportData) => {
         '64 a 72'
       ],
       [
-        { content: 'RETÉNS:', styles: { halign: 'left', fontStyle: 'bold' } }, 
+        { content: 'RETÉNS:', styles: { fontStyle: 'bold' } }, 
         formatName(data.retenFielAux[0]), 
         formatName(data.retenFielAux[1]), 
         { content: '', styles: { cellPadding: 0 } }, 
@@ -93,11 +99,15 @@ export const exportDailyDetailPDF = (data: DailyExportData) => {
         { content: '', styles: { cellPadding: 0 } }
       ],
       [
-        { content: 'ACOMPANHANDO:', styles: { halign: 'left', fontStyle: 'bold' } },
-        { content: data.acompFielAux.filter(m => m).map(formatName).join(' - ') || '—', colSpan: 5 }
+        { content: 'ACOMPANHANDO:', styles: { fontStyle: 'bold' } },
+        formatNameList(data.acompFielAux[0]), 
+        formatNameList(data.acompFielAux[1]), 
+        { content: '', styles: { cellPadding: 0 } }, 
+        formatNameList(data.acompFielAux[2]), 
+        { content: '', styles: { cellPadding: 0 } }
       ],
       [
-        { content: 'PATRULHA DO CAV', styles: { halign: 'left', fontStyle: 'bold' } },
+        { content: 'PATRULHA DO CAV', styles: { fontStyle: 'bold' } },
         formatName(data.patrulhaCav[0]), 
         formatName(data.patrulhaCav[1]), 
         '55 a 63',
@@ -105,7 +115,7 @@ export const exportDailyDetailPDF = (data: DailyExportData) => {
         '73 a 81'
       ],
       [
-        { content: 'RETÉM:', styles: { halign: 'left', fontStyle: 'bold' } }, 
+        { content: 'RETÉM:', styles: { fontStyle: 'bold' } }, 
         formatName(data.retenPatrulhaCav[0]), 
         formatName(data.retenPatrulhaCav[1]), 
         { content: '', styles: { cellPadding: 0 } }, 
@@ -113,8 +123,12 @@ export const exportDailyDetailPDF = (data: DailyExportData) => {
         { content: '', styles: { cellPadding: 0 } }
       ],
       [
-        { content: 'ACOMPANHANDO:', styles: { halign: 'left', fontStyle: 'bold' } },
-        { content: data.acompPatrulhaCav.filter(m => m).map(formatName).join(' - ') || '—', colSpan: 5 }
+        { content: 'ACOMPANHANDO:', styles: { fontStyle: 'bold' } },
+        formatNameList(data.acompPatrulhaCav[0]), 
+        formatNameList(data.acompPatrulhaCav[1]), 
+        { content: '', styles: { cellPadding: 0 } }, 
+        formatNameList(data.acompPatrulhaCav[2]), 
+        { content: '', styles: { cellPadding: 0 } }
       ],
     ],
     theme: 'grid',
@@ -138,18 +152,18 @@ export const exportDailyDetailPDF = (data: DailyExportData) => {
     margin: { right: midPoint + 5 },
     head: [['SERVIÇO DIÁRIO', 'MILITAR']],
     body: [
-      [{ content: 'SUPERVISOR DA MÁQUINA', styles: { halign: 'left', fontStyle: 'bold' } }, formatName(data.supervisorMaq)],
-      [{ content: 'RETÉM:', styles: { halign: 'left', fontStyle: 'bold' } }, formatName(data.retenMaq)],
-      [{ content: 'ACOMPANHANDO:', styles: { halign: 'left', fontStyle: 'bold' } }, formatName(data.acompMaq)],
-      [{ content: 'FIEL DE CAV DE SERVIÇO', styles: { halign: 'left', fontStyle: 'bold' } }, formatName(data.fielCav)],
-      [{ content: 'RETÉM:', styles: { halign: 'left', fontStyle: 'bold' } }, formatName(data.retenCav)],
-      [{ content: 'ACOMPANHANDO:', styles: { halign: 'left', fontStyle: 'bold' } }, formatName(data.acompCav)],
-      [{ content: 'SUPERVISOR "MO"', styles: { halign: 'left', fontStyle: 'bold' } }, formatName(data.supervisorMO)],
-      [{ content: 'RETÉM:', styles: { halign: 'left', fontStyle: 'bold' } }, formatName(data.retenMO)],
-      [{ content: 'ACOMPANHANDO:', styles: { halign: 'left', fontStyle: 'bold' } }, formatName(data.acompMO)],
-      [{ content: 'SUPERVISOR "EL"', styles: { halign: 'left', fontStyle: 'bold' } }, formatName(data.supervisorEL)],
-      [{ content: 'RETÉM:', styles: { halign: 'left', fontStyle: 'bold' } }, formatName(data.retenEL)],
-      [{ content: 'ACOMPANHANDO:', styles: { halign: 'left', fontStyle: 'bold' } }, formatName(data.acompEL)],
+      [{ content: 'SUPERVISOR DA MÁQUINA', styles: { fontStyle: 'bold' } }, formatName(data.supervisorMaq)],
+      [{ content: 'RETÉM:', styles: { fontStyle: 'bold' } }, formatName(data.retenMaq)],
+      [{ content: 'ACOMPANHANDO:', styles: { fontStyle: 'bold' } }, formatNameList(data.acompMaq)],
+      [{ content: 'FIEL DE CAV DE SERVIÇO', styles: { fontStyle: 'bold' } }, formatName(data.fielCav)],
+      [{ content: 'RETÉM:', styles: { fontStyle: 'bold' } }, formatName(data.retenCav)],
+      [{ content: 'ACOMPANHANDO:', styles: { fontStyle: 'bold' } }, formatNameList(data.acompCav)],
+      [{ content: 'SUPERVISOR "MO"', styles: { fontStyle: 'bold' } }, formatName(data.supervisorMO)],
+      [{ content: 'RETÉM:', styles: { fontStyle: 'bold' } }, formatName(data.retenMO)],
+      [{ content: 'ACOMPANHANDO:', styles: { fontStyle: 'bold' } }, formatNameList(data.acompMO)],
+      [{ content: 'SUPERVISOR "EL"', styles: { fontStyle: 'bold' } }, formatName(data.supervisorEL)],
+      [{ content: 'RETÉM:', styles: { fontStyle: 'bold' } }, formatName(data.retenEL)],
+      [{ content: 'ACOMPANHANDO:', styles: { fontStyle: 'bold' } }, formatNameList(data.acompEL)],
     ],
     theme: 'grid',
     styles: { fontSize: 8, halign: 'center', cellPadding: 1.5, textColor: [0, 0, 0] },
@@ -165,7 +179,7 @@ export const exportDailyDetailPDF = (data: DailyExportData) => {
     margin: { left: midPoint + 5 },
     head: [['DEPARTAMENTO MÁQUINAS', 'MILITAR']],
     body: [
-      [{ content: 'CABO DE DIA', styles: { halign: 'left', fontStyle: 'bold' } }, formatName(data.caboDia)],
+      [{ content: 'CABO DE DIA', styles: { fontStyle: 'bold' } }, formatName(data.caboDia)],
     ],
     theme: 'grid',
     styles: { fontSize: 8, halign: 'center', cellPadding: 1.2, textColor: [0, 0, 0] },
@@ -179,7 +193,7 @@ export const exportDailyDetailPDF = (data: DailyExportData) => {
 
   doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
-  doc.text('BOYS:', midPoint + 5 + (rightColumnWidth / 2) + 10, boysStartY - 2, { align: 'center' });
+  doc.text('BOYS:', midPoint + 5 + (rightColumnWidth / 2), boysStartY - 2, { align: 'center' });
   
   const boysRows = data.boys || [[null, null, null], [null, null, null], [null, null, null], [null, null, null]];
   autoTable(doc, {

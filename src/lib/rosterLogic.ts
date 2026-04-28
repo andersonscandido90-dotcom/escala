@@ -134,7 +134,7 @@ export function generateRoster(
   const rotationOrder = [4, 3, 2, 1];
 
   let frozenMilitaries: Military[] = [];
-  let frozenAcompanhantes: (Military | null)[] = [];
+  let frozenAcompanhantesList: (Military[])[] = [];
   let frozenPeriod: ShipPeriod | null = null;
 
   const roster: RosterEntry[] = [];
@@ -142,7 +142,7 @@ export function generateRoster(
 
   militares.forEach(m => {
     if (getStatusAtivo(m.id, startDate, statusPeriods) === 'ACOMPANHANDO') {
-      acompanhanteCounters.set(m.id, 0);
+      acompanhanteCounters.set(m.id, acompDuration);
     }
   });
 
@@ -155,7 +155,7 @@ export function generateRoster(
       const endDay = startOfDay(parseISO(frozenPeriod.end));
       if (isAfter(currentDate, endDay)) {
         frozenMilitaries = [];
-        frozenAcompanhantes = [];
+        frozenAcompanhantesList = [];
         frozenPeriod = null;
       }
     }
@@ -171,6 +171,7 @@ export function generateRoster(
 
     if (shipStatus.type === 'SERVICO_ESTENDIDO') {
       if (shipStatus.phase === 'inicio' && frozenMilitaries.length === 0) {
+        const dayAcompIds: number[] = [];
         for (let i = 0; i < maxSlots; i++) {
           let titular: Military | null = null;
           if (i < countPerDay) {
@@ -195,17 +196,19 @@ export function generateRoster(
 
           if (titular) {
             frozenMilitaries.push(titular);
-            const acomp = chooseAcompanhante(dateStr, militares, statusPeriods, acompanhanteCounters, titular.id, acompDuration);
-            frozenAcompanhantes.push(acomp);
-            frozenPeriod = shipStatus.period;
+            const acomps = chooseAcompanhantes(dateStr, militares, statusPeriods, acompanhanteCounters, titular.id, acompDuration, model, dayAcompIds);
+            acomps.forEach(a => dayAcompIds.push(a.id));
+            frozenAcompanhantesList.push(acomps || []);
             roster.push({ 
               data: dateStr, 
               militaryId: titular.id, 
-              acompanhanteId: acomp ? acomp.id : null, 
+              acompanhanteId: acomps[0]?.id || null, 
+              acompanhanteIds: acomps.map(a => a.id),
               status: 'SERVICO', 
               emNavio: true,
               shift: maxSlots > 1 ? SHIFTS[i] : undefined
             });
+            frozenPeriod = shipStatus.period;
           } else {
             roster.push({ 
               data: dateStr, 
@@ -220,10 +223,12 @@ export function generateRoster(
         if (baseModel === 'QUARTOS') quarterRotationIdx++;
       } else if (frozenMilitaries.length > 0) {
         frozenMilitaries.forEach((m, idx) => {
+          const acomps = frozenAcompanhantesList[idx] || [];
           roster.push({ 
             data: dateStr, 
             militaryId: m.id, 
-            acompanhanteId: frozenAcompanhantes[idx]?.id || null, 
+            acompanhanteId: acomps[0]?.id || null, 
+            acompanhanteIds: acomps.map(a => a.id),
             status: 'SERVICO', 
             emNavio: true,
             shift: maxSlots > 1 ? SHIFTS[idx] : undefined
@@ -246,6 +251,7 @@ export function generateRoster(
 
     // NORMAL DAY
     const dayTitulars: Military[] = [];
+    const dayAcompIds: number[] = [];
     for (let i = 0; i < maxSlots; i++) {
       let titular: Military | null = null;
       if (i < countPerDay) {
@@ -270,11 +276,13 @@ export function generateRoster(
 
       if (titular) {
         dayTitulars.push(titular);
-        const acomp = chooseAcompanhante(dateStr, militares, statusPeriods, acompanhanteCounters, titular.id, acompDuration);
+        const acomps = chooseAcompanhantes(dateStr, militares, statusPeriods, acompanhanteCounters, titular.id, acompDuration, model, dayAcompIds);
+        acomps.forEach(a => dayAcompIds.push(a.id));
         roster.push({ 
           data: dateStr, 
           militaryId: titular.id, 
-          acompanhanteId: acomp ? acomp.id : null, 
+          acompanhanteId: acomps[0]?.id || null, 
+          acompanhanteIds: acomps.map(a => a.id),
           status: 'SERVICO', 
           emNavio: false,
           shift: maxSlots > 1 ? SHIFTS[i] : undefined
@@ -317,27 +325,49 @@ function findNextTitular(dateStr: string, startIndex: number, militares: Militar
   return { titular: null, newIndex: startIndex };
 }
 
-function chooseAcompanhante(
+function chooseAcompanhantes(
   dateStr: string,
   militares: Military[],
   statusPeriods: StatusPeriod[],
   counters: Map<number, number>,
   titularId: number,
-  acompDuration: number
-) {
-  const active = militares.filter(m => {
+  acompDuration: number,
+  model: string,
+  excludeIds: number[] = []
+): Military[] {
+  const eligible = militares.filter(m => {
     if (m.id === titularId) return false;
-    return getStatusAtivo(m.id, dateStr, statusPeriods) === 'ACOMPANHANDO';
+    if (excludeIds.includes(m.id)) return false;
+    if (getStatusAtivo(m.id, dateStr, statusPeriods) !== 'ACOMPANHANDO') return false;
+    
+    const count = counters.get(m.id) ?? acompDuration; 
+    return count >= acompDuration;
   });
 
-  for (const m of active) {
-    if (!counters.has(m.id)) counters.set(m.id, 0);
-    if ((counters.get(m.id) || 0) >= acompDuration) {
-      counters.set(m.id, 0);
-      return m;
-    }
+  // Sort by start date of the status period for today
+  eligible.sort((a, b) => {
+    const pA = statusPeriods.find(p => p.militaryId === a.id && p.type === 'ACOMPANHANDO' && dateStr >= p.start && dateStr <= p.end);
+    const pB = statusPeriods.find(p => p.militaryId === b.id && p.type === 'ACOMPANHANDO' && dateStr >= p.start && dateStr <= p.end);
+    if (pA && pB) return pA.start.localeCompare(pB.start);
+    return 0;
+  });
+
+  const isDailyService = !model.endsWith('_2') && !model.endsWith('_3');
+
+  if (isDailyService) {
+    // For daily services, everyone eligible today shadows, reset their counters
+    eligible.forEach(m => counters.set(m.id, 0));
+    return eligible;
   }
-  return null;
+
+  // For shift services, we pick the first eligible one for this shift slot
+  if (eligible.length > 0) {
+    const picked = eligible[0];
+    counters.set(picked.id, 0);
+    return [picked]; 
+  }
+  
+  return [];
 }
 
 function incrementAcompanhanteCounters(
@@ -370,6 +400,9 @@ function applyManualSwaps(baseRoster: RosterEntry[], manualSwaps: ManualSwap[]):
 
     if (swap.type === 'substituir') {
       entry.militaryId = newId;
+      if (newId && entry.acompanhanteIds && entry.acompanhanteIds.includes(newId)) {
+        entry.acompanhanteIds = entry.acompanhanteIds.filter(id => id !== newId);
+      }
       if (newId && entry.acompanhanteId === newId) entry.acompanhanteId = null;
     } else if (swap.type === 'troca') {
       if (oldId === null) {

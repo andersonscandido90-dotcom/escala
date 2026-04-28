@@ -371,15 +371,34 @@ export default function App() {
     };
 
     const getAcompForScale = (srvId: number | null | undefined, date: string) => {
-      const srv = services.find(s => s.id === srvId);
-      if (!srv) return [];
-      return srv.militares.filter(m => {
-        const isAcompToday = getStatusAtivo(m.id, date, srv.statusPeriods || []) === 'ACOMPANHANDO';
-        if (!isAcompToday) return false;
-        
-        // Rule: cannot be Acompanhante on the day before vacation
-        const nextDay = format(addDays(parseISO(date), 1), 'yyyy-MM-dd');
-        return getStatusAtivo(m.id, nextDay, srv.statusPeriods || []) !== 'FERIAS';
+      const data = getRosterData(srvId);
+      if (!data) return [];
+      
+      const dayEntries = data.roster.filter(e => e.data === date);
+      const acompIds = new Set<number>();
+      dayEntries.forEach(e => {
+        if (e.acompanhanteId) acompIds.add(e.acompanhanteId);
+        if (e.acompanhanteIds) e.acompanhanteIds.forEach(id => acompIds.add(id));
+      });
+
+      const shadowers = data.srv.militares.filter(m => acompIds.has(m.id));
+
+      // Sort by the start date of the ACOMPANHANDO period that includes today
+      return shadowers.sort((a, b) => {
+        const pA = (data.srv.statusPeriods || []).find(p => 
+          p.militaryId === a.id && 
+          p.type === 'ACOMPANHANDO' && 
+          date >= p.start && 
+          date <= p.end
+        );
+        const pB = (data.srv.statusPeriods || []).find(p => 
+          p.militaryId === b.id && 
+          p.type === 'ACOMPANHANDO' && 
+          date >= p.start && 
+          date <= p.end
+        );
+        if (pA && pB) return pA.start.localeCompare(pB.start);
+        return 0;
       });
     };
 
@@ -387,19 +406,19 @@ export default function App() {
       date: modal.date,
       fielAux: [null, null, null],
       retenFielAux: [null, null, null],
-      acompFielAux: [null, null, null],
+      acompFielAux: [[], [], []],
       patrulhaCav: [null, null, null],
       retenPatrulhaCav: [null, null, null],
-      acompPatrulhaCav: [null, null, null],
+      acompPatrulhaCav: [[], [], []],
       supervisorMaq: null,
       fielCav: null,
       supervisorMO: null,
       supervisorEL: null,
       caboDia: null,
-      retenMaq: null, acompMaq: null,
-      retenCav: null, acompCav: null,
-      retenMO: null, acompMO: null,
-      retenEL: null, acompEL: null,
+      retenMaq: null, acompMaq: [],
+      retenCav: null, acompCav: [],
+      retenMO: null, acompMO: [],
+      retenEL: null, acompEL: [],
       boys: [[null, null, null], [null, null, null], [null, null, null], [null, null, null]],
       navyLogo: logos.navy,
       shipLogo: logos.ship,
@@ -421,9 +440,16 @@ export default function App() {
     ];
 
     // Acompanhando for Fiel (Personnel with status ACOMPANHANDO)
-    const acompFiel12 = getAcompForScale(exportMappings['fielAux'], modal.date);
-    const acompEletr = getAcompForScale(exportMappings['eletrlux'], modal.date);
-    data.acompFielAux = [acompFiel12[0] || null, acompFiel12[1] || null, acompEletr[0] || null];
+    const acompFielList = getAcompForScale(exportMappings['fielAux'], modal.date);
+    const acompEletrList = getAcompForScale(exportMappings['eletrlux'], modal.date);
+    
+    // Distribute Fiel shadowers between first two slots (08-12 and 12-16)
+    acompFielList.forEach((m, idx) => {
+      const slot = idx % 2;
+      data.acompFielAux[slot].push(m);
+    });
+    // Slot 2 (16-20) is primarily for Eletr shadowing Fiel
+    acompEletrList.forEach(m => data.acompFielAux[2].push(m));
 
     // Patrulha do CAV
     const p1 = getShiftInfo(exportMappings['patrulhaCav'], modal.date, 0);
@@ -437,29 +463,50 @@ export default function App() {
       getRetem(exportMappings['patrulhaCav'], modal.date, 2),
     ];
 
-    const acompCavList = getAcompForScale(exportMappings['patrulhaCav'], modal.date);
-    data.acompPatrulhaCav = [acompCavList[0] || null, acompCavList[1] || null, acompCavList[2] || null];
+    // Patrulha do CAV Acompanhamento Rules
+    const acompCavListRaw = getAcompForScale(exportMappings['patrulhaCav'], modal.date);
+    
+    if (acompCavListRaw.length === 1) {
+      // Rule: 1 person goes to preferred 16-20h slot (index 2)
+      data.acompPatrulhaCav[2].push(acompCavListRaw[0]);
+    } else if (acompCavListRaw.length === 2) {
+      // Rule: 2 people rotate preference based on date
+      const dateVal = parseISO(modal.date).getDate();
+      if (dateVal % 2 === 0) {
+        data.acompPatrulhaCav[1].push(acompCavListRaw[0]);
+        data.acompPatrulhaCav[2].push(acompCavListRaw[1]);
+      } else {
+        data.acompPatrulhaCav[1].push(acompCavListRaw[1]);
+        data.acompPatrulhaCav[2].push(acompCavListRaw[0]);
+      }
+    } else if (acompCavListRaw.length >= 3) {
+      // Rule: Unlimited shadowers distributed across slots
+      acompCavListRaw.forEach((m, idx) => {
+        const slot = idx % 3;
+        data.acompPatrulhaCav[slot].push(m);
+      });
+    }
 
-    // Daily services
+    // Daily services (Unlimited shadowers)
     const sm = getShiftInfo(exportMappings['supervisorMaq'], modal.date);
     data.supervisorMaq = sm;
     data.retenMaq = getRetem(exportMappings['supervisorMaq'], modal.date);
-    data.acompMaq = getAcompForScale(exportMappings['supervisorMaq'], modal.date)[0] || null;
+    data.acompMaq = getAcompForScale(exportMappings['supervisorMaq'], modal.date);
 
     const fc = getShiftInfo(exportMappings['fielCav'], modal.date);
     data.fielCav = fc;
     data.retenCav = getRetem(exportMappings['fielCav'], modal.date);
-    data.acompCav = getAcompForScale(exportMappings['fielCav'], modal.date)[0] || null;
+    data.acompCav = getAcompForScale(exportMappings['fielCav'], modal.date);
 
     const mo = getShiftInfo(exportMappings['supervisorMO'], modal.date);
     data.supervisorMO = mo;
     data.retenMO = getRetem(exportMappings['supervisorMO'], modal.date);
-    data.acompMO = getAcompForScale(exportMappings['supervisorMO'], modal.date)[0] || null;
+    data.acompMO = getAcompForScale(exportMappings['supervisorMO'], modal.date);
 
     const el = getShiftInfo(exportMappings['supervisorEL'], modal.date);
     data.supervisorEL = el;
     data.retenEL = getRetem(exportMappings['supervisorEL'], modal.date);
-    data.acompEL = getAcompForScale(exportMappings['supervisorEL'], modal.date)[0] || null;
+    data.acompEL = getAcompForScale(exportMappings['supervisorEL'], modal.date);
 
     data.caboDia = getShiftInfo(exportMappings['caboDia'], modal.date);
 
@@ -792,7 +839,7 @@ export default function App() {
         const dayEntries = roster.filter(e => e.data === date);
         const entry = dayEntries.find(e => e.militaryId === m.id) || dayEntries[0];
         const isTitular = dayEntries.some(e => e.militaryId === m.id);
-        const isAcomp = dayEntries.some(e => e.acompanhanteId === m.id);
+        const isAcomp = dayEntries.some(e => e.militaryId !== m.id && ((e.acompanhanteIds && e.acompanhanteIds.includes(m.id)) || e.acompanhanteId === m.id));
         const status = getStatusAtivo(m.id, date, statusPeriods);
         
         let cellValue = '—';
