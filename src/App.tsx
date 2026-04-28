@@ -24,7 +24,7 @@ import {
   Minimize2,
   FileText
 } from 'lucide-react';
-import { format, addDays, parseISO } from 'date-fns';
+import { format, addDays, parseISO, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { 
   Military, 
@@ -270,6 +270,50 @@ export default function App() {
     setModal({ type: 'DAILY_EXPORT', date: format(new Date(), 'yyyy-MM-dd'), rowMilitaryId: 0 });
   };
 
+  const getRosterData = (id: number | null | undefined, customDate?: string) => {
+    if (!id) return null;
+    const srv = services.find(s => s.id === id);
+    if (!srv) return null;
+
+    // Use current live state for active service to avoid stale PDF data before save
+    const useLive = id === activeServiceId;
+    const currentMilitares = useLive ? militares : srv.militares;
+    const currentStatus = useLive ? statusPeriods : (srv.statusPeriods || []);
+    const currentShip = useLive ? shipPeriods : (srv.shipPeriods || []);
+    const currentSwaps = useLive ? manualSwaps : (srv.manualSwaps || []);
+    const currentHoliday = useLive ? holidayDates : (srv.holidayDates || []);
+    const currentAcomp = useLive ? acompDuration : (srv.acompDuration || 3);
+    const currentModel = useLive ? rosterModel : (srv.rosterModel || 'CORRIDA');
+
+    const sDate = parseISO(srv.config.startDate);
+    const tDate = customDate ? parseISO(customDate) : (modal?.date ? parseISO(modal.date) : sDate);
+    
+    const diffDays = Math.abs(differenceInDays(tDate, sDate));
+    const rangeDays = Math.max(srv.config.days, diffDays + 60); // Increased buffer
+    
+    const rosterResult = generateRoster(
+      srv.config.startDate,
+      rangeDays,
+      currentMilitares,
+      currentStatus,
+      currentShip,
+      currentSwaps,
+      currentAcomp,
+      currentModel,
+      currentHoliday
+    );
+
+    const srvWithLive = useLive ? {
+      ...srv,
+      militares: currentMilitares,
+      statusPeriods: currentStatus,
+      manualSwaps: currentSwaps,
+      rosterModel: currentModel
+    } : srv;
+
+    return { srv: srvWithLive, roster: rosterResult };
+  };
+
   const handleDailyExport = () => {
     if (!modal) return;
     
@@ -286,55 +330,25 @@ export default function App() {
 
     try {
       const rostersCache: Record<number, { srv: RosterService, roster: RosterEntry[] }> = {};
-    const getRosterData = (id: number | null | undefined) => {
-      if (!id) return null;
-      if (rostersCache[id]) return rostersCache[id];
-      const srv = services.find(s => s.id === id);
-      if (!srv) return null;
+      const getRosterCached = (id: number | null | undefined) => {
+        if (!id) return null;
+        if (rostersCache[id]) return rostersCache[id];
+        const res = getRosterData(id);
+        if (res) rostersCache[id] = res;
+        return res;
+      };
 
-      const sDate = parseISO(srv.config.startDate);
-      const tDate = parseISO(modal.date);
-      
-      // If target date is BEFORE scale start, it will be empty by design of generateRoster
-      // We calculate days from start to target
-      const diffMs = tDate.getTime() - sDate.getTime();
-      const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-      
-      // Buffer to ensure we have enough people for sequence (Retém/Acomp)
-      const rangeDays = Math.max(srv.config.days, diffDays + 15);
-      
-      const roster = generateRoster(
-        srv.config.startDate,
-        rangeDays,
-        srv.militares,
-        srv.statusPeriods || [],
-        srv.shipPeriods || [],
-        srv.manualSwaps || [],
-        srv.acompDuration || 3,
-        srv.rosterModel || 'CORRIDA',
-        srv.holidayDates || []
-      );
-      rostersCache[id] = { srv, roster };
-      return rostersCache[id];
-    };
+      const getShiftInfo = (srvId: number | null | undefined, date: string, shiftIndex: number = 0) => {
+        const data = getRosterCached(srvId);
+        if (!data) return null;
+        
+        // Get all entries for the day and sort them logically
+        const dayEntries = data.roster.filter(e => e.data === date);
+        const entry = dayEntries[shiftIndex];
 
-    const getShiftInfo = (srvId: number | null | undefined, date: string, shiftIndex: number = 0) => {
-      const data = getRosterData(srvId);
-      if (!data) return null;
-      
-      const dayEntries = data.roster.filter(e => e.data === date);
-      let entry = dayEntries[shiftIndex];
-
-      if (!entry && shiftIndex > 0 && dayEntries.length > 0) {
-        const firstEntryIndex = data.roster.findIndex(e => e.data === date);
-        if (firstEntryIndex !== -1) {
-          entry = data.roster[firstEntryIndex + shiftIndex];
-        }
-      }
-
-      if (!entry) return null;
-      return data.srv.militares.find(m => m.id === entry.militaryId) || null;
-    };
+        if (!entry) return null;
+        return data.srv.militares.find(m => m.id === entry.militaryId) || null;
+      };
 
     const getRetem = (srvId: number | null | undefined, date: string, shiftIndex: number = 0) => {
       const data = getRosterData(srvId);
@@ -427,29 +441,40 @@ export default function App() {
     };
 
     // Fiel das Auxiliares (2 from scale 1, 1 from scale 2)
-    const f1 = getShiftInfo(exportMappings['fielAux'], modal.date, 0);
-    const f2 = getShiftInfo(exportMappings['fielAux'], modal.date, 1);
-    const f3 = getShiftInfo(exportMappings['eletrlux'], modal.date, 0);
-    data.fielAux = [f1, f2, f3];
+    const rawFiel1 = getShiftInfo(exportMappings['fielAux'], modal.date, 0);
+    const rawFiel2 = getShiftInfo(exportMappings['fielAux'], modal.date, 1);
+    const rawEletr = getShiftInfo(exportMappings['eletrlux'], modal.date, 0);
 
-    // Reténs for Fiel (Next day personnel)
-    data.retenFielAux = [
-      getRetem(exportMappings['fielAux'], modal.date, 0),
-      getRetem(exportMappings['fielAux'], modal.date, 1),
-      getRetem(exportMappings['eletrlux'], modal.date, 0),
-    ];
+    const rawRetemFiel1 = getRetem(exportMappings['fielAux'], modal.date, 0);
+    const rawRetemFiel2 = getRetem(exportMappings['fielAux'], modal.date, 1);
+    const rawRetemEletr = getRetem(exportMappings['eletrlux'], modal.date, 0);
 
-    // Acompanhando for Fiel (Personnel with status ACOMPANHANDO)
+    // Acompanhando lists
     const acompFielList = getAcompForScale(exportMappings['fielAux'], modal.date);
     const acompEletrList = getAcompForScale(exportMappings['eletrlux'], modal.date);
+
+    // Prepare combined arrays to rotate
+    const baseTitulars = [rawFiel1, rawFiel2, rawEletr];
+    const baseRetens = [rawRetemFiel1, rawRetemFiel2, rawRetemEletr];
+    const baseAcomps: (Military[])[] = [[], [], []];
     
-    // Distribute Fiel shadowers between first two slots (08-12 and 12-16)
-    acompFielList.forEach((m, idx) => {
-      const slot = idx % 2;
-      data.acompFielAux[slot].push(m);
-    });
-    // Slot 2 (16-20) is primarily for Eletr shadowing Fiel
-    acompEletrList.forEach(m => data.acompFielAux[2].push(m));
+    // Initial distribution for Acompanhando
+    acompFielList.forEach((m, idx) => baseAcomps[idx % 2].push(m));
+    acompEletrList.forEach(m => baseAcomps[2].push(m));
+
+    // Calculate rotation offset based on days from startDate to interleave slots
+    const startObj = config.startDate ? parseISO(config.startDate) : new Date();
+    const currentObj = parseISO(modal.date);
+    const dayDiff = Math.abs(differenceInDays(currentObj, startObj));
+    const rotationOffset = dayDiff % 3;
+
+    // Apply rotation
+    for (let i = 0; i < 3; i++) {
+      const targetIdx = (i + rotationOffset) % 3;
+      data.fielAux[targetIdx] = baseTitulars[i];
+      data.retenFielAux[targetIdx] = baseRetens[i];
+      data.acompFielAux[targetIdx] = baseAcomps[i];
+    }
 
     // Patrulha do CAV
     const p1 = getShiftInfo(exportMappings['patrulhaCav'], modal.date, 0);
@@ -819,12 +844,18 @@ export default function App() {
       setModal({ type: 'ALERT', date: '', rowMilitaryId: 0, message: 'O militar selecionado já é o titular.' });
       return;
     }
+    
+    // Determine shiftIndex if possible
+    const dayEntries = roster.filter(e => e.data === date);
+    const shiftIndex = shift ? dayEntries.findIndex(e => e.shift === shift) : undefined;
+
     setManualSwaps([...manualSwaps, {
       data: date,
       originalMilitaryId: oldId,
       newMilitaryId: newId,
       type,
-      shift
+      shift,
+      shiftIndex: shiftIndex !== -1 ? shiftIndex : undefined
     }]);
     setModal(null);
   };
@@ -1319,49 +1350,62 @@ export default function App() {
           <div className="flex flex-col gap-4">
             <p className="label-tech mb-2">Mudar turno para:</p>
             <div className="flex flex-col gap-2">
-              {['08:00 - 12:00', '12:00 - 16:00', '16:00 - 20:00'].map((s) => {
+              {['08:00 - 12:00', '12:00 - 16:00', '16:00 - 20:00'].map((s, idx) => {
                 const isCurrent = s === modal.shift;
-                const occupantId = roster.find(e => e.data === modal.date && e.shift === s)?.militaryId;
+                
+                // Detection logic
+                let occupantId: number | null = null;
+                const currentData = getRosterData(activeServiceId);
+                const dayEntries = currentData?.roster.filter(e => e.data === modal.date) || [];
+                
+                if (dayEntries.length > 1) {
+                  // For scales with multiple slots, find the occupant of this specific shift
+                  occupantId = dayEntries.find(e => e.shift === s)?.militaryId || null;
+                } else if (dayEntries.length === 1) {
+                  // For scales with only one slot (like Eletricista)
+                  // The person can't move between these 3 shifts in the canonical sense, 
+                  // but we show who is in the only slot available.
+                  occupantId = dayEntries[0].militaryId;
+                }
+
                 const occupantName = occupantId ? militares.find(m => m.id === occupantId)?.name : 'VAGO';
 
                 return (
                   <button
                     key={s}
-                    disabled={isCurrent}
+                    disabled={isCurrent && dayEntries.length > 1}
                     onClick={() => {
-                      if (occupantId) {
-                        // SWAP between the two shifts
-                        const newManualSwaps = [
-                          ...manualSwaps,
-                          { data: modal.date, originalMilitaryId: modal.rowMilitaryId, newMilitaryId: occupantId, type: 'substituir', shift: modal.shift },
-                          { data: modal.date, originalMilitaryId: occupantId, newMilitaryId: modal.rowMilitaryId, type: 'substituir', shift: s }
-                        ];
-                        setManualSwaps(newManualSwaps as ManualSwap[]);
-                      } else {
-                        // MOVE to empty shift (using substituir targeting the original slot with null, and adding specific target if needed)
-                        // This logic depends on the generator, but for now we can treat it as a swap with null
-                        const newManualSwaps = [
-                          ...manualSwaps,
-                          { data: modal.date, originalMilitaryId: modal.rowMilitaryId, newMilitaryId: 0, type: 'substituir', shift: modal.shift },
-                          { data: modal.date, originalMilitaryId: 0, newMilitaryId: modal.rowMilitaryId, type: 'substituir', shift: s }
-                        ];
-                        setManualSwaps(newManualSwaps as ManualSwap[]);
-                      }
+                      setManualSwaps([
+                        ...manualSwaps,
+                        { 
+                          data: modal.date, 
+                          originalMilitaryId: modal.rowMilitaryId, 
+                          newMilitaryId: occupantId || 0, 
+                          type: 'substituir', 
+                          shift: modal.shift || undefined,
+                          shiftIndex: modal.shift ? dayEntries.findIndex(e => e.shift === modal.shift) : 0
+                        }
+                      ]);
                       setModal(null);
                     }}
                     className={cn(
-                      "w-full p-5 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-5 transition-all text-left",
+                      "w-full p-5 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-5 transition-all text-left group",
                       isCurrent ? "opacity-40 cursor-not-allowed" : "hover:bg-white/10 hover:border-accent/40"
                     )}
                   >
                     <div className={cn("p-3 rounded-xl border border-white/5 shadow-lg", isCurrent ? "bg-white/10" : "bg-bg-main text-accent")}>
                       <Timer className="w-5 h-5" />
                     </div>
-                    <div>
+                    <div className="flex-1">
+                      <div className="text-[10px] font-mono font-bold text-text-muted uppercase tracking-widest mb-1">Turno</div>
                       <div className="font-display font-black text-text-main text-lg tracking-tight">{s}</div>
-                      <div className="text-[10px] font-mono font-bold text-text-muted uppercase tracking-widest">
-                        {isCurrent ? '(Horário Atual)' : `Ocupante: ${occupantName}`}
-                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-[10px] font-mono font-bold text-text-muted uppercase tracking-widest mb-1">Ocupante atual</div>
+                      <div className={cn(
+                        "font-bold text-sm",
+                        occupantId ? "text-text-main" : "text-amber-500/80"
+                      )}>{occupantName}</div>
                     </div>
                   </button>
                 );

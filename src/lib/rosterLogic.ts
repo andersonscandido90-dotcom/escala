@@ -387,35 +387,70 @@ function applyManualSwaps(baseRoster: RosterEntry[], manualSwaps: ManualSwap[]):
   const workingRoster = baseRoster.map(e => ({ ...e }));
   
   for (const swap of manualSwaps) {
-    const entryIndex = workingRoster.findIndex(e => 
-      e.data === swap.data && 
-      (e.militaryId === swap.originalMilitaryId || (e.militaryId === null && swap.originalMilitaryId === 0)) &&
-      (!swap.shift || e.shift === swap.shift)
-    );
+    // Collect all entries for this day to handle index-based matching
+    const dayEntries = workingRoster.filter(e => e.data === swap.data);
+    
+    let entryIndex = -1;
+    
+    // 1. Try matching by shiftIndex (Most robust)
+    if (swap.shiftIndex !== undefined && dayEntries[swap.shiftIndex]) {
+      entryIndex = workingRoster.indexOf(dayEntries[swap.shiftIndex]);
+    }
+    
+    // 2. Try matching by shift name
+    if (entryIndex === -1 && swap.shift) {
+      entryIndex = workingRoster.findIndex(e => e.data === swap.data && e.shift === swap.shift);
+    }
+    
+    // 3. One-slot scale fallback
+    if (entryIndex === -1 && dayEntries.length === 1) {
+      entryIndex = workingRoster.indexOf(dayEntries[0]);
+    }
+    
+    // 4. Fallback to militaryId match on that day if still not found
+    if (entryIndex === -1) {
+      entryIndex = workingRoster.findIndex(e => {
+        if (e.data !== swap.data) return false;
+        return (e.militaryId === swap.originalMilitaryId || (e.militaryId === null && swap.originalMilitaryId === 0));
+      });
+    }
+
     if (entryIndex === -1) continue;
 
     const entry = workingRoster[entryIndex];
     const oldId = entry.militaryId;
     const newId = swap.newMilitaryId === 0 ? null : swap.newMilitaryId;
 
-    if (swap.type === 'substituir') {
-      entry.militaryId = newId;
-      if (newId && entry.acompanhanteIds && entry.acompanhanteIds.includes(newId)) {
+    entry.militaryId = newId;
+    
+    // Clean up acompanhantes
+    if (newId !== null) {
+      if (entry.acompanhanteIds) {
         entry.acompanhanteIds = entry.acompanhanteIds.filter(id => id !== newId);
       }
-      if (newId && entry.acompanhanteId === newId) entry.acompanhanteId = null;
-    } else if (swap.type === 'troca') {
-      if (oldId === null) {
-        entry.militaryId = newId;
-        continue;
-      }
+      if (entry.acompanhanteId === newId) entry.acompanhanteId = null;
+    }
 
-      entry.militaryId = newId;
+    // Balancing Logic: Find where the new occupant came from and put the old occupant there
+    const isRealPerson = (newId !== null);
+    
+    // Search on same day first
+    const sameDaySwapIdx = workingRoster.findIndex((e, idx) => {
+      if (idx === entryIndex || e.data !== swap.data) return false;
       
+      // If we move someone to a VAGO slot and specify the target shift indirectly or via replacement, 
+      // we need to find that VAGO slot to put the old person there.
+      return e.militaryId === newId;
+    });
+
+    if (sameDaySwapIdx !== -1) {
+      workingRoster[sameDaySwapIdx].militaryId = oldId;
+    } else if (isRealPerson) {
+      // Fallback to future dates
       for (let i = 0; i < workingRoster.length; i++) {
         const e = workingRoster[i];
         if (isAfter(parseISO(e.data), parseISO(swap.data)) && e.militaryId === newId) {
-          e.militaryId = oldId;
+          workingRoster[i].militaryId = oldId;
           break;
         }
       }

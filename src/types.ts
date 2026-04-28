@@ -43,6 +43,7 @@ export interface ManualSwap {
   newMilitaryId: number;
   type: 'troca' | 'substituir';
   shift?: string;
+  shiftIndex?: number;
 }
 
 export interface RosterEntry {
