@@ -130,8 +130,10 @@ export const RosterTable: React.FC<RosterTableProps> = ({
                       </div>
                     );
                   } else if (statusAtivo) {
-                    const navalStatusColor = statusAtivo === 'FERIAS' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20' :
-                                           statusAtivo === 'CURSO' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/20' :
+                    const navalStatusColor = statusAtivo === 'FERIAS' ? 'bg-yellow-400/20 text-yellow-500 border border-yellow-500/20' :
+                                           statusAtivo === 'CURSO' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/20' :
+                                           statusAtivo === 'DESTACADO' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20' :
+                                           statusAtivo === 'PUNICAO' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/20' :
                                            'bg-red-500/20 text-red-400 border border-red-500/20';
                     
                     cellClass = cn(cellClass, navalStatusColor, "font-black text-[10px] uppercase tracking-tighter");

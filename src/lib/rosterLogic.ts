@@ -19,7 +19,7 @@ import {
   RosterModel
 } from '../types';
 
-export const STATUS_IMPEDITIVOS: StatusType[] = ['CURSO', 'FERIAS', 'DISPENSA_MEDICA', 'PATERNIDADE', 'LUTO'];
+export const STATUS_IMPEDITIVOS: StatusType[] = ['CURSO', 'FERIAS', 'DISPENSA_MEDICA', 'PATERNIDADE', 'LUTO', 'DESTACADO', 'PUNICAO'];
 const SHIFTS = ['08:00 - 12:00', '12:00 - 16:00', '16:00 - 20:00'];
 
 export function getStatusAtivo(militaryId: number, dateStr: string, statusPeriods: StatusPeriod[]): StatusType | null {

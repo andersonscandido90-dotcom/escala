@@ -7,7 +7,9 @@ export type StatusType =
   | 'ACOMPANHANDO'
   | 'NAVIO'
   | 'INDISPONIVEL'
-  | 'SERVICO';
+  | 'SERVICO'
+  | 'DESTACADO'
+  | 'PUNICAO';
 
 export type RosterModel = 
   | 'CORRIDA' | 'CORRIDA_2' | 'CORRIDA_3' 
@@ -63,6 +65,8 @@ export const STATUS_LABELS: Partial<Record<StatusType, string>> = {
   PATERNIDADE: 'Paternidade',
   LUTO: 'Luto',
   ACOMPANHANDO: 'Acompanhando',
+  DESTACADO: 'Destacado',
+  PUNICAO: 'Punição',
 };
 
 export const STATUS_COLORS: Partial<Record<StatusType, string>> = {
@@ -72,6 +76,8 @@ export const STATUS_COLORS: Partial<Record<StatusType, string>> = {
   PATERNIDADE: 'bg-pink-400 text-white',
   LUTO: 'bg-slate-600 text-white',
   ACOMPANHANDO: 'bg-purple-500 text-white',
+  DESTACADO: 'bg-emerald-600 text-white',
+  PUNICAO: 'bg-orange-700 text-white',
 };
 
 export interface RosterService {

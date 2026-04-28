@@ -110,8 +110,10 @@ export const StatusManager: React.FC<StatusManagerProps> = ({
               <div className="flex items-center justify-between text-xs relative z-10">
                 <span className={cn(
                   "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border",
-                  p.type === 'FERIAS' ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" :
-                  p.type === 'CURSO' ? "bg-amber-500/10 text-amber-400 border-amber-500/20" :
+                  p.type === 'FERIAS' ? "bg-yellow-400/10 text-yellow-500 border-yellow-500/20" :
+                  p.type === 'CURSO' ? "bg-blue-500/10 text-blue-400 border-blue-500/20" :
+                  p.type === 'DESTACADO' ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" :
+                  p.type === 'PUNICAO' ? "bg-orange-500/10 text-orange-400 border-orange-500/20" :
                   "bg-red-500/10 text-red-400 border-red-500/20"
                 )}>
                   {STATUS_LABELS[p.type] || p.type}
