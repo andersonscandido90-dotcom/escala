@@ -99,7 +99,9 @@ export const RosterTable: React.FC<RosterTableProps> = ({
                       <div className="flex flex-col items-center gap-1.5 relative z-10">
                         <div className="flex items-center gap-1.5 font-black text-[11px] uppercase tracking-wider">
                           <Zap className={cn("w-3.5 h-3.5 fill-accent text-accent", isVerm && "text-red-400 fill-red-400")} />
-                          <span className={cn("text-accent", isVerm && "text-red-400")}>SERV</span> 
+                          <span className={cn("text-accent", isVerm && "text-red-400")}>
+                            {entry?.status === 'TROCA' ? 'TROCA' : 'SERV'}
+                          </span> 
                           {entry?.emNavio && <Ship className="w-3.5 h-3.5 text-white" />}
                         </div>
                         {entry?.shift && (

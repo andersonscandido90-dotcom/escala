@@ -422,9 +422,16 @@ function applyManualSwaps(baseRoster: RosterEntry[], manualSwaps: ManualSwap[]):
     const newId = swap.newMilitaryId === 0 ? null : swap.newMilitaryId;
 
     entry.militaryId = newId;
+    entry.externalName = swap.externalName;
+    if (swap.externalName) {
+      // If external replacement, keep the original ID so it stays "filled" in UI
+      // but mark it as TROCA
+      entry.militaryId = swap.originalMilitaryId;
+      entry.status = 'TROCA';
+    }
     
     // Clean up acompanhantes
-    if (newId !== null) {
+    if (newId !== null && !swap.externalName) {
       if (entry.acompanhanteIds) {
         entry.acompanhanteIds = entry.acompanhanteIds.filter(id => id !== newId);
       }

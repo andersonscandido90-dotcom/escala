@@ -347,7 +347,19 @@ export default function App() {
         const entry = dayEntries[shiftIndex];
 
         if (!entry) return null;
-        return data.srv.militares.find(m => m.id === entry.militaryId) || null;
+        const military = data.srv.militares.find(m => m.id === entry.militaryId) || null;
+        
+        if (entry.externalName) {
+          return {
+            id: -1,
+            name: entry.externalName,
+            posto: '',
+            especialidade: '',
+            antiguidade: 999
+          } as Military;
+        }
+        
+        return military;
       };
 
     const getRetem = (srvId: number | null | undefined, date: string, shiftIndex: number = 0) => {
@@ -1299,6 +1311,65 @@ export default function App() {
 
         {modal?.type === 'SELECT_NEW' && (
           <div className="flex flex-col gap-4">
+            {modal.swapType === 'substituir' && (
+              <div className="p-4 bg-accent/5 border border-accent/20 rounded-2xl mb-2">
+                <p className="text-[10px] font-mono font-bold text-accent uppercase tracking-widest mb-3">Substituição Externa (Fora da Lista)</p>
+                <div className="flex gap-2">
+                  <input 
+                    type="text"
+                    id="external-military-name"
+                    placeholder="NOME DO MILITAR..."
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        const target = e.currentTarget;
+                        const name = target.value;
+                        if (name.trim()) {
+                          // Determine shiftIndex
+                          const dayEntries = roster.filter(ent => ent.data === modal.date);
+                          const sIdx = modal.shift ? dayEntries.findIndex(ent => ent.shift === modal.shift) : 0;
+
+                          setManualSwaps([...manualSwaps, {
+                            data: modal.date,
+                            originalMilitaryId: modal.oldId!,
+                            newMilitaryId: 0,
+                            type: 'substituir',
+                            shift: modal.shift,
+                            shiftIndex: sIdx !== -1 ? sIdx : 0,
+                            externalName: name.trim().toUpperCase()
+                          }]);
+                          setModal(null);
+                        }
+                      }
+                    }}
+                    className="flex-1 bg-bg-main border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-text-main focus:border-accent outline-none placeholder:text-text-muted/50"
+                  />
+                  <button 
+                    onClick={() => {
+                      const input = document.getElementById('external-military-name') as HTMLInputElement;
+                      const name = input?.value;
+                      if (name && name.trim()) {
+                        const dayEntries = roster.filter(ent => ent.data === modal.date);
+                        const sIdx = modal.shift ? dayEntries.findIndex(ent => ent.shift === modal.shift) : 0;
+
+                        setManualSwaps([...manualSwaps, {
+                          data: modal.date,
+                          originalMilitaryId: modal.oldId!,
+                          newMilitaryId: 0,
+                          type: 'substituir',
+                          shift: modal.shift,
+                          shiftIndex: sIdx !== -1 ? sIdx : 0,
+                          externalName: name.trim().toUpperCase()
+                        }]);
+                        setModal(null);
+                      }
+                    }}
+                    className="px-6 bg-accent text-bg-main font-black rounded-xl text-xs uppercase tracking-widest hover:bg-accent-light transition-colors"
+                  >
+                    OK
+                  </button>
+                </div>
+              </div>
+            )}
             <p className="label-tech mb-2">Selecione o militar para {modal.swapType === 'troca' ? 'permutar' : 'substituir'}:</p>
             <div className="max-h-[400px] overflow-y-auto flex flex-col gap-2 pr-2 custom-scrollbar">
               {militares

@@ -9,7 +9,8 @@ export type StatusType =
   | 'INDISPONIVEL'
   | 'SERVICO'
   | 'DESTACADO'
-  | 'PUNICAO';
+  | 'PUNICAO'
+  | 'TROCA';
 
 export type RosterModel = 
   | 'CORRIDA' | 'CORRIDA_2' | 'CORRIDA_3' 
@@ -46,6 +47,7 @@ export interface ManualSwap {
   type: 'troca' | 'substituir';
   shift?: string;
   shiftIndex?: number;
+  externalName?: string;
 }
 
 export interface RosterEntry {
@@ -56,6 +58,7 @@ export interface RosterEntry {
   status: StatusType;
   emNavio: boolean;
   shift?: string;
+  externalName?: string;
 }
 
 export const STATUS_LABELS: Partial<Record<StatusType, string>> = {
@@ -67,6 +70,7 @@ export const STATUS_LABELS: Partial<Record<StatusType, string>> = {
   ACOMPANHANDO: 'Acompanhando',
   DESTACADO: 'Destacado',
   PUNICAO: 'Punição',
+  TROCA: 'Troca',
 };
 
 export const STATUS_COLORS: Partial<Record<StatusType, string>> = {
@@ -78,6 +82,7 @@ export const STATUS_COLORS: Partial<Record<StatusType, string>> = {
   ACOMPANHANDO: 'bg-purple-500 text-white',
   DESTACADO: 'bg-emerald-600 text-white',
   PUNICAO: 'bg-orange-700 text-white',
+  TROCA: 'bg-purple-600 text-white',
 };
 
 export interface RosterService {
