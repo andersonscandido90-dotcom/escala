@@ -1264,33 +1264,35 @@ export default function App() {
               </button>
             </div>
 
-            <button 
-              onClick={() => setModal({ ...modal, type: 'SELECT_SPECIFIC_SHIFT' })}
-              className="w-full p-5 bg-accent/5 border border-accent/20 rounded-2xl flex items-center gap-5 hover:bg-accent/10 hover:border-accent/50 transition-all group text-left"
-            >
-              <div className="p-3 bg-accent/20 rounded-xl border border-accent/20 text-accent transition-colors shadow-lg">
-                <Timer className="w-5 h-5" />
-              </div>
-              <div className="flex-1">
-                <div className="font-display font-black text-accent text-lg tracking-tight">Alterar Horário de Turno</div>
-                <div className="text-[10px] font-mono font-bold text-accent/80 uppercase tracking-widest leading-relaxed">Mudar para qualquer horário disponível</div>
-              </div>
-              <ChevronRight className="w-5 h-5 text-accent/50 group-hover:translate-x-1 transition-transform" />
-            </button>
+            {roster.filter(e => e.data === modal.date).length > 1 && (
+              <>
+                <button 
+                  onClick={() => setModal({ ...modal, type: 'SELECT_SPECIFIC_SHIFT' })}
+                  className="w-full p-5 bg-accent/5 border border-accent/20 rounded-2xl flex items-center gap-5 hover:bg-accent/10 hover:border-accent/50 transition-all group text-left"
+                >
+                  <div className="p-3 bg-accent/20 rounded-xl border border-accent/20 text-accent transition-colors shadow-lg">
+                    <Timer className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-display font-black text-accent text-lg tracking-tight">Alterar Horário de Turno</div>
+                    <div className="text-[10px] font-mono font-bold text-accent/80 uppercase tracking-widest leading-relaxed">Mudar para qualquer horário disponível</div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-accent/50 group-hover:translate-x-1 transition-transform" />
+                </button>
 
-            {modal.shift && roster.filter(e => e.data === modal.date && e.militaryId !== null).length > 1 && (
-              <button 
-                onClick={() => setModal({ ...modal, type: 'SELECT_SHIFT_SWAP' })}
-                className="w-full p-5 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-5 hover:bg-white/10 hover:border-accent/50 transition-all group text-left"
-              >
-                <div className="p-3 bg-bg-main rounded-xl border border-white/5 group-hover:text-accent transition-colors shadow-lg">
-                  <ArrowRightLeft className="w-5 h-5 rotate-90" />
-                </div>
-                <div>
-                  <div className="font-display font-black text-text-main text-lg tracking-tight">Permutar com Colega do Dia</div>
-                  <div className="text-[10px] font-mono font-bold text-text-muted uppercase tracking-widest">Inverter horários internamente</div>
-                </div>
-              </button>
+                <button 
+                  onClick={() => setModal({ ...modal, type: 'SELECT_SHIFT_SWAP' })}
+                  className="w-full p-5 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-5 hover:bg-white/10 hover:border-accent/50 transition-all group text-left"
+                >
+                  <div className="p-3 bg-bg-main rounded-xl border border-white/5 group-hover:text-accent transition-colors shadow-lg">
+                    <ArrowRightLeft className="w-5 h-5 rotate-90" />
+                  </div>
+                  <div>
+                    <div className="font-display font-black text-text-main text-lg tracking-tight">Permutar com Colega do Dia</div>
+                    <div className="text-[10px] font-mono font-bold text-text-muted uppercase tracking-widest">Inverter horários internamente</div>
+                  </div>
+                </button>
+              </>
             )}
           </div>
         )}
