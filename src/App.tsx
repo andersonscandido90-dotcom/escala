@@ -919,143 +919,145 @@ export default function App() {
   };
 
   const exportExcel = () => {
-    if (services.length === 0) return;
+    if (services.length === 0) {
+      setModal({ type: 'ALERT', date: '', rowMilitaryId: 0, message: "Não há serviços cadastrados para exportar." });
+      return;
+    }
     
-    const wb = XLSX.utils.book_new();
+    try {
+      const wb = XLSX.utils.book_new();
 
-    // 1. Summary Sheet Data
-    const summaryData = services.map(s => ({
-      'Escala': s.name,
-      'Qtd. Militares': s.militares.length,
-      'Modelo': s.rosterModel
-    }));
-    const wsSummary = XLSX.utils.json_to_sheet(summaryData);
-    XLSX.utils.book_append_sheet(wb, wsSummary, 'Resumo Geral');
+      // 1. Summary Sheet Data
+      const summaryData = services.map(s => ({
+        'Escala': s.name,
+        'Qtd. Militares': s.militares?.length || 0,
+        'Modelo': s.rosterModel,
+        'Início': s.config?.startDate || 'N/A'
+      }));
+      const wsSummary = XLSX.utils.json_to_sheet(summaryData);
+      XLSX.utils.book_append_sheet(wb, wsSummary, 'Resumo Geral');
 
-    // 2. All Impediments/Status Sheet Data
-    const statusData: any[] = [];
-    services.forEach(s => {
-      s.statusPeriods.forEach(p => {
-        const m = s.militares.find(mil => mil.id === p.militaryId);
-        if (m) {
-          statusData.push({
-            'Militar': m.name,
-            'Escala': s.name,
-            'Situação': STATUS_LABELS[p.type] || p.type,
-            'Início': format(parseISO(p.startDate), 'dd/MM/yyyy'),
-            'Fim': format(parseISO(p.endDate), 'dd/MM/yyyy')
-          });
-        }
-      });
-    });
-    if (statusData.length > 0) {
-      const wsStatus = XLSX.utils.json_to_sheet(statusData);
-      XLSX.utils.book_append_sheet(wb, wsStatus, 'Impedimentos e Férias');
-    }
-
-    // 3. Individual Duty Report (List format)
-    const individualDuties: any[] = [];
-
-    services.forEach(service => {
-      const svcMilitares = service.militares;
-      if (svcMilitares.length === 0) return;
-
-      const svcConfig = service.config || {};
-      const svcStartDate = svcConfig.startDate || config.startDate;
-      const svcDays = svcConfig.days || config.days;
-      
-      const svcStatusPeriods = service.statusPeriods || [];
-      const svcShipPeriods = service.shipPeriods || [];
-      const svcManualSwaps = service.manualSwaps || [];
-      const svcAcompDuration = service.acompDuration ?? acompDuration;
-      const svcRosterModel = service.rosterModel || rosterModel;
-      const svcHolidayDates = service.holidayDates || holidayDates;
-      
-      const svcQuartoOrder = svcConfig.quartoOrder || config.quartoOrder;
-      const svcMilitaryOrder = svcConfig.militaryOrder || config.militaryOrder;
-      const svcMilitaryOrderVerm = svcConfig.militaryOrderVermelha || config.militaryOrderVermelha;
-      const svcSkipVermelha = svcConfig.skipVermelha ?? config.skipVermelha;
-      
-      const svcRoster = generateRoster(
-        svcStartDate,
-        svcDays,
-        svcMilitares,
-        svcStatusPeriods,
-        svcShipPeriods,
-        svcManualSwaps,
-        svcAcompDuration,
-        svcRosterModel,
-        svcHolidayDates,
-        svcQuartoOrder,
-        svcMilitaryOrder,
-        svcMilitaryOrderVerm,
-        svcSkipVermelha
-      );
-
-      if (svcRoster.length === 0) return;
-
-      const dates = (Array.from(new Set(svcRoster.map(e => e.data))).sort()) as string[];
-      
-      // Data for the grid sheet
-      const gridData = svcMilitares.map(m => {
-        const row: any = { 'Militar': m.name };
-        
-        let dutyDates: string[] = [];
-
-        dates.forEach(date => {
-          const dayEntries = svcRoster.filter(e => e.data === date);
-          const entry = dayEntries.find(e => e.militaryId === m.id);
-          
-          const isTitular = !!entry && entry.status === 'SERVICO';
-          const isAcomp = dayEntries.some(e => e.militaryId !== m.id && ((e.acompanhanteIds && e.acompanhanteIds.includes(m.id)) || e.acompanhanteId === m.id));
-          const status = getStatusAtivo(m.id, date, svcStatusPeriods);
-          
-          let cellValue = '—';
-          if (isTitular) {
-            cellValue = 'SERVIÇO' + (entry.emNavio ? ' (NAVIO)' : '');
-            if (entry.shift) cellValue += ` [${entry.shift}]`;
-            dutyDates.push(format(parseISO(date), 'dd/MM'));
+      // 2. All Impediments/Status Sheet Data
+      const statusData: any[] = [];
+      services.forEach(s => {
+        if (!s.statusPeriods) return;
+        s.statusPeriods.forEach(p => {
+          const m = s.militares?.find(mil => mil.id === p.militaryId);
+          if (m) {
+            statusData.push({
+              'Militar': m.name,
+              'Escala': s.name,
+              'Situação': STATUS_LABELS[p.type] || p.type,
+              'Início': p.start ? format(parseISO(p.start), 'dd/MM/yyyy') : 'N/A',
+              'Fim': p.end ? format(parseISO(p.end), 'dd/MM/yyyy') : 'N/A'
+            });
           }
-          else if (isAcomp) cellValue = 'ACOMP.';
-          else if (status) cellValue = STATUS_LABELS[status];
-          
-          const dateLabel = format(parseISO(date), 'dd/MM');
-          row[dateLabel] = cellValue;
+        });
+      });
+      if (statusData.length > 0) {
+        const wsStatus = XLSX.utils.json_to_sheet(statusData);
+        XLSX.utils.book_append_sheet(wb, wsStatus, 'Afastamentos e Férias');
+      }
+
+      // 3. Individual Duty Report (List format)
+      const individualDuties: any[] = [];
+
+      services.forEach(service => {
+        const svcMilitares = service.militares || [];
+        if (svcMilitares.length === 0) return;
+
+        const svcConfig = service.config || {};
+        const svcStartDate = svcConfig.startDate || config.startDate;
+        const svcDays = svcConfig.days || config.days;
+        
+        const svcStatusPeriods = service.statusPeriods || [];
+        const svcShipPeriods = service.shipPeriods || [];
+        const svcManualSwaps = service.manualSwaps || [];
+        const svcAcompDuration = service.acompDuration ?? acompDuration;
+        const svcRosterModel = service.rosterModel || rosterModel;
+        const svcHolidayDates = service.holidayDates || holidayDates;
+        
+        const svcQuartoOrder = svcConfig.quartoOrder || config.quartoOrder;
+        const svcMilitaryOrder = svcConfig.militaryOrder || config.militaryOrder;
+        const svcMilitaryOrderVerm = svcConfig.militaryOrderVermelha || config.militaryOrderVermelha;
+        const svcSkipVermelha = svcConfig.skipVermelha ?? config.skipVermelha;
+        
+        const svcRoster = generateRoster(
+          svcStartDate,
+          svcDays,
+          svcMilitares,
+          svcStatusPeriods,
+          svcShipPeriods,
+          svcManualSwaps,
+          svcAcompDuration,
+          svcRosterModel,
+          svcHolidayDates,
+          svcQuartoOrder,
+          svcMilitaryOrder,
+          svcMilitaryOrderVerm,
+          svcSkipVermelha
+        );
+
+        if (svcRoster.length === 0) return;
+
+        const dates = (Array.from(new Set(svcRoster.map(e => e.data))).sort()) as string[];
+        
+        const gridData = svcMilitares.map(m => {
+          const row: any = { 'Militar': m.name };
+          let dutyDates: string[] = [];
+
+          dates.forEach(date => {
+            const dayEntries = svcRoster.filter(e => e.data === date);
+            const entry = dayEntries.find(e => e.militaryId === m.id);
+            
+            const isTitular = !!entry && entry.status === 'SERVICO';
+            const isAcomp = dayEntries.some(e => e.militaryId !== m.id && ((e.acompanhanteIds && e.acompanhanteIds.includes(m.id)) || e.acompanhanteId === m.id));
+            const status = getStatusAtivo(m.id, date, svcStatusPeriods);
+            
+            let cellValue = '—';
+            if (isTitular) {
+              cellValue = 'SERVIÇO' + (entry.emNavio ? ' (NAVIO)' : '');
+              if (entry.shift) cellValue += ` [${entry.shift}]`;
+              dutyDates.push(format(parseISO(date), 'dd/MM'));
+            }
+            else if (isAcomp) cellValue = 'ACOMP.';
+            else if (status) cellValue = STATUS_LABELS[status] || status;
+            
+            const dateLabel = format(parseISO(date), 'dd/MM');
+            row[dateLabel] = cellValue;
+          });
+
+          individualDuties.push({
+            'Militar': m.name,
+            'Escala': service.name,
+            'Total de Serviços': dutyDates.length,
+            'Datas de Serviço': dutyDates.join(', ')
+          });
+
+          return row;
         });
 
-        // Add to individual duties collection
-        individualDuties.push({
-          'Militar': m.name,
-          'Escala': service.name,
-          'Total de Serviços': dutyDates.length,
-          'Datas de Serviço': dutyDates.join(', ')
-        });
-
-        return row;
+        const ws = XLSX.utils.json_to_sheet(gridData);
+        let sheetName = service.name.substring(0, 31).replace(/[\\*?\/\[\]]/g, '');
+        let finalName = sheetName || `Escala ${service.id}`;
+        let counter = 1;
+        while (wb.SheetNames.includes(finalName)) {
+          const suffix = ` (${counter})`;
+          finalName = (sheetName.substring(0, 31 - suffix.length) + suffix);
+          counter++;
+        }
+        XLSX.utils.book_append_sheet(wb, ws, finalName);
       });
 
-      const ws = XLSX.utils.json_to_sheet(gridData);
-      let sheetName = service.name.substring(0, 31).replace(/[\\*?\/\[\]]/g, '');
-      let finalName = sheetName || `Escala ${service.id}`;
-      let counter = 1;
-      while (wb.SheetNames.includes(finalName)) {
-        const suffix = ` (${counter})`;
-        finalName = (sheetName.substring(0, 31 - suffix.length) + suffix);
-        counter++;
+      if (individualDuties.length > 0) {
+        const wsIndiv = XLSX.utils.json_to_sheet(individualDuties);
+        XLSX.utils.book_append_sheet(wb, wsIndiv, 'Relatório Individual');
       }
-      XLSX.utils.book_append_sheet(wb, ws, finalName);
-    });
 
-    // 4. Append Individual Report sheet
-    if (individualDuties.length > 0) {
-      const wsIndiv = XLSX.utils.json_to_sheet(individualDuties);
-      XLSX.utils.book_append_sheet(wb, wsIndiv, 'Relatório Individual');
-    }
-
-    if (wb.SheetNames.length > 0) {
       XLSX.writeFile(wb, `relatorio_escalas_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
-    } else {
-      setModal({ type: 'ALERT', date: '', rowMilitaryId: 0, message: "Não há dados de escala para exportar." });
+    } catch (error) {
+      console.error('Erro ao exportar Excel:', error);
+      setModal({ type: 'ALERT', date: '', rowMilitaryId: 0, message: "Houve um erro técnico ao gerar o arquivo Excel. Verifique se os dados estão corretos." });
     }
   };
 
