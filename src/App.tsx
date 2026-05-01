@@ -22,7 +22,8 @@ import {
   Pencil,
   Maximize2,
   Minimize2,
-  FileText
+  FileText,
+  X
 } from 'lucide-react';
 import { format, addDays, parseISO, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -67,7 +68,9 @@ export default function App() {
   const [holidayDates, setHolidayDates] = useState<string[]>([]);
   const [config, setConfig] = useState({
     startDate: format(addDays(new Date(), 1), 'yyyy-MM-dd'),
-    days: 30
+    days: 30,
+    quartoOrder: 'MODERNO_PRIMEIRO' as 'MODERNO_PRIMEIRO' | 'ANTIGO_PRIMEIRO',
+    quartoInternalOrder: 'MAIS_MODERNO' as 'MAIS_MODERNO' | 'MAIS_ANTIGO'
   });
 
   // IDs
@@ -137,7 +140,12 @@ export default function App() {
             rosterModel: data.rosterModel || 'CORRIDA',
             holidayDates: data.holidayDates || [],
             nextIds: data.nextIds || { military: 1, status: 1, ship: 1 },
-            config: data.config || { startDate: format(addDays(new Date(), 1), 'yyyy-MM-dd'), days: 30 }
+            config: data.config || { 
+              startDate: format(addDays(new Date(), 1), 'yyyy-MM-dd'), 
+              days: 30,
+              quartoOrder: 'MODERNO_PRIMEIRO',
+              quartoInternalOrder: 'MAIS_MODERNO'
+            }
           };
           setServices([initialService]);
           setActiveServiceId(initialService.id);
@@ -178,7 +186,12 @@ export default function App() {
         rosterModel: 'CORRIDA',
         holidayDates: [],
         nextIds: { military: 17, status: 1, ship: 1 },
-        config: { startDate: format(addDays(new Date(), 1), 'yyyy-MM-dd'), days: 30 }
+        config: { 
+          startDate: format(addDays(new Date(), 1), 'yyyy-MM-dd'), 
+          days: 30,
+          quartoOrder: 'MODERNO_PRIMEIRO',
+          quartoInternalOrder: 'MAIS_MODERNO'
+        }
       };
       setServices([initialService]);
       setActiveServiceId(initialService.id);
@@ -195,7 +208,12 @@ export default function App() {
     setRosterModel(service.rosterModel || 'CORRIDA');
     setHolidayDates(service.holidayDates || []);
     setNextIds(service.nextIds || { military: 1, status: 1, ship: 1 });
-    setConfig(service.config || { startDate: format(addDays(new Date(), 1), 'yyyy-MM-dd'), days: 30 });
+    setConfig({
+      startDate: service.config?.startDate || format(addDays(new Date(), 1), 'yyyy-MM-dd'),
+      days: service.config?.days || 30,
+      quartoOrder: service.config?.quartoOrder || 'MODERNO_PRIMEIRO',
+      quartoInternalOrder: service.config?.quartoInternalOrder || 'MAIS_MODERNO'
+    });
     setServiceName(service.name);
   };
 
@@ -222,7 +240,12 @@ export default function App() {
         rosterModel: 'CORRIDA',
         holidayDates: [],
         nextIds: { military: 1, status: 1, ship: 1 },
-        config: { startDate: format(addDays(new Date(), 1), 'yyyy-MM-dd'), days: 30 }
+        config: { 
+          startDate: format(addDays(new Date(), 1), 'yyyy-MM-dd'), 
+          days: 30,
+          quartoOrder: 'MODERNO_PRIMEIRO',
+          quartoInternalOrder: 'MAIS_MODERNO'
+        }
       };
       setServices(prev => [...prev, newService]);
       setActiveServiceId(newService.id);
@@ -300,7 +323,9 @@ export default function App() {
       currentSwaps,
       currentAcomp,
       currentModel,
-      currentHoliday
+      currentHoliday,
+      srv.config.quartoOrder || 'MODERNO_PRIMEIRO',
+      srv.config.quartoInternalOrder || 'MAIS_MODERNO'
     );
 
     const srvWithLive = useLive ? {
@@ -760,7 +785,9 @@ export default function App() {
       manualSwaps,
       acompDuration,
       rosterModel,
-      holidayDates
+      holidayDates,
+      config.quartoOrder,
+      config.quartoInternalOrder
     );
   }, [config, militares, statusPeriods, shipPeriods, manualSwaps, acompDuration, rosterModel, holidayDates]);
 
@@ -1157,6 +1184,33 @@ export default function App() {
                     </optgroup>
                   </select>
                 </div>
+
+                {rosterModel.startsWith('QUARTOS') && (
+                  <>
+                    <div className="flex flex-col gap-2">
+                      <label className="label-tech text-accent">Ordem dos Quartos</label>
+                      <select 
+                        value={config.quartoOrder || 'MODERNO_PRIMEIRO'}
+                        onChange={(e) => setConfig({ ...config, quartoOrder: e.target.value as any })}
+                        className="bg-bg-main border border-accent/20 rounded-xl px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main"
+                      >
+                        <option value="MODERNO_PRIMEIRO">Do 4º p/ o 1º (Moderno Primeiro)</option>
+                        <option value="ANTIGO_PRIMEIRO">Do 1º p/ o 4º (Antigo Primeiro)</option>
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="label-tech text-accent">Ordem no Quarto</label>
+                      <select 
+                        value={config.quartoInternalOrder || 'MAIS_MODERNO'}
+                        onChange={(e) => setConfig({ ...config, quartoInternalOrder: e.target.value as any })}
+                        className="bg-bg-main border border-accent/20 rounded-xl px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main"
+                      >
+                        <option value="MAIS_MODERNO">Militar Mais Moderno Primeiro</option>
+                        <option value="MAIS_ANTIGO">Militar Mais Antigo Primeiro</option>
+                      </select>
+                    </div>
+                  </>
+                )}
                 <div className="flex gap-3">
                   <button 
                     onClick={() => setIsFullScreen(true)}
@@ -1313,18 +1367,26 @@ export default function App() {
           <div className="flex flex-col gap-4">
             {modal.swapType === 'substituir' && (
               <div className="p-4 bg-accent/5 border border-accent/20 rounded-2xl mb-2">
-                <p className="text-[10px] font-mono font-bold text-accent uppercase tracking-widest mb-3">Substituição Externa (Fora da Lista)</p>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-[10px] font-mono font-bold text-accent uppercase tracking-widest">Substituição Externa (Fora da Lista)</p>
+                  <button 
+                    onClick={() => setModal(null)}
+                    className="text-text-muted hover:text-white transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
                 <div className="flex gap-2">
                   <input 
                     type="text"
                     id="external-military-name"
-                    placeholder="NOME DO MILITAR..."
+                    autoFocus
+                    placeholder="DIGITE O NOME DO MILITAR..."
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         const target = e.currentTarget;
                         const name = target.value;
                         if (name.trim()) {
-                          // Determine shiftIndex
                           const dayEntries = roster.filter(ent => ent.data === modal.date);
                           const sIdx = modal.shift ? dayEntries.findIndex(ent => ent.shift === modal.shift) : 0;
 
@@ -1363,14 +1425,18 @@ export default function App() {
                         setModal(null);
                       }
                     }}
-                    className="px-6 bg-accent text-bg-main font-black rounded-xl text-xs uppercase tracking-widest hover:bg-accent-light transition-colors"
+                    className="px-6 bg-accent text-bg-main font-black rounded-xl text-xs uppercase tracking-widest hover:bg-accent-light transition-colors shadow-lg active:scale-95"
                   >
                     OK
                   </button>
                 </div>
+                <p className="text-[9px] text-text-muted mt-2 uppercase font-bold">* Use esta opção apenas para militares de outros departamentos.</p>
               </div>
             )}
-            <p className="label-tech mb-2">Selecione o militar para {modal.swapType === 'troca' ? 'permutar' : 'substituir'}:</p>
+            <div className="flex items-center justify-between mb-1">
+              <p className="label-tech">Selecione o militar para {modal.swapType === 'troca' ? 'permutar' : 'substituir'}:</p>
+              {modal.swapType === 'substituir' && <p className="text-[9px] font-mono font-bold text-text-muted uppercase italic">ou use o campo acima ↑</p>}
+            </div>
             <div className="max-h-[400px] overflow-y-auto flex flex-col gap-2 pr-2 custom-scrollbar">
               {militares
                 .filter(m => m.id !== modal.oldId)

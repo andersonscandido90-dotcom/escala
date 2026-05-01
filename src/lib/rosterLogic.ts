@@ -103,7 +103,9 @@ export function generateRoster(
   manualSwaps: ManualSwap[],
   acompDuration: number = 3,
   model: RosterModel = 'CORRIDA',
-  holidayDates: string[] = []
+  holidayDates: string[] = [],
+  quartoOrder: 'MODERNO_PRIMEIRO' | 'ANTIGO_PRIMEIRO' = 'MODERNO_PRIMEIRO',
+  quartoInternalOrder: 'MAIS_MODERNO' | 'MAIS_ANTIGO' = 'MAIS_MODERNO'
 ): RosterEntry[] {
   if (militares.length === 0) return [];
 
@@ -114,8 +116,10 @@ export function generateRoster(
 
   const baseModel = model.replace(/_2$|_3$/, '') as 'CORRIDA' | 'QUARTOS' | 'PRETA_VERMELHA';
 
-  // Sort by antiguidade (1 = Antigo, higher = Moderno)
-  const sortedMilitares = [...militares].sort((a, b) => b.antiguidade - a.antiguidade);
+  // Internal sorting: default is Most Modern first (Highest antiguidade)
+  const sortedMilitares = [...militares].sort((a, b) => 
+    quartoInternalOrder === 'MAIS_MODERNO' ? b.antiguidade - a.antiguidade : a.antiguidade - b.antiguidade
+  );
 
   const acompanhanteCounters = new Map<number, number>();
   
@@ -131,7 +135,9 @@ export function generateRoster(
   };
   const quarterIndices: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0 };
   let quarterRotationIdx = 0;
-  const rotationOrder = [4, 3, 2, 1];
+  
+  // Rotation Order: Modern to Ancient or Ancient to Modern
+  const rotationOrder = quartoOrder === 'MODERNO_PRIMEIRO' ? [4, 3, 2, 1] : [1, 2, 3, 4];
 
   let frozenMilitaries: Military[] = [];
   let frozenAcompanhantesList: (Military[])[] = [];

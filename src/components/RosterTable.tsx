@@ -4,7 +4,7 @@ import { ptBR } from 'date-fns/locale';
 import { Military, RosterEntry, StatusPeriod, STATUS_COLORS, STATUS_LABELS } from '../types';
 import { getStatusAtivo, isMilitaryImpeded } from '../lib/rosterLogic';
 import { cn } from '../lib/utils';
-import { Zap, Ship, BookOpen } from 'lucide-react';
+import { Zap, Ship, BookOpen, ArrowRightLeft } from 'lucide-react';
 
 interface RosterTableProps {
   militares: Military[];
@@ -98,10 +98,18 @@ export const RosterTable: React.FC<RosterTableProps> = ({
                     content = (
                       <div className="flex flex-col items-center gap-1.5 relative z-10">
                         <div className="flex items-center gap-1.5 font-black text-[11px] uppercase tracking-wider">
-                          <Zap className={cn("w-3.5 h-3.5 fill-accent text-accent", isVerm && "text-red-400 fill-red-400")} />
-                          <span className={cn("text-accent", isVerm && "text-red-400")}>
+                          <span className={cn(
+                            "text-accent", 
+                            isVerm && "text-red-400",
+                            entry?.status === 'TROCA' && "text-purple-400"
+                          )}>
                             {entry?.status === 'TROCA' ? 'TROCA' : 'SERV'}
                           </span> 
+                          {entry?.status === 'TROCA' ? (
+                            <ArrowRightLeft className="w-3.5 h-3.5 text-purple-400" />
+                          ) : (
+                            <Zap className={cn("w-3.5 h-3.5 fill-accent text-accent", isVerm && "text-red-400 fill-red-400")} />
+                          )}
                           {entry?.emNavio && <Ship className="w-3.5 h-3.5 text-white" />}
                         </div>
                         {entry?.shift && (

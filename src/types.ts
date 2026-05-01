@@ -96,5 +96,10 @@ export interface RosterService {
   rosterModel: RosterModel;
   holidayDates: string[];
   nextIds: { military: number; status: number; ship: number };
-  config: { startDate: string; days: number };
+  config: { 
+    startDate: string; 
+    days: number;
+    quartoOrder?: 'MODERNO_PRIMEIRO' | 'ANTIGO_PRIMEIRO';
+    quartoInternalOrder?: 'MAIS_MODERNO' | 'MAIS_ANTIGO';
+  };
 }
