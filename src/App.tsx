@@ -23,6 +23,7 @@ import {
   Maximize2,
   Minimize2,
   FileText,
+  Bell,
   X
 } from 'lucide-react';
 import { format, addDays, parseISO, differenceInDays } from 'date-fns';
@@ -35,9 +36,10 @@ import {
   RosterEntry,
   STATUS_LABELS,
   RosterModel,
-  RosterService
+  RosterService,
+  RestViolation
 } from './types';
-import { generateRoster, getStatusAtivo, STATUS_IMPEDITIVOS, isMilitaryImpeded } from './lib/rosterLogic';
+import { generateRoster, getStatusAtivo, STATUS_IMPEDITIVOS, isMilitaryImpeded, validateRosterRest } from './lib/rosterLogic';
 import { exportDailyDetailPDF, DailyExportData } from './lib/pdfExport';
 import { Dashboard } from './components/Dashboard';
 import { RosterTable } from './components/RosterTable';
@@ -804,6 +806,10 @@ export default function App() {
     );
   }, [config, militares, statusPeriods, shipPeriods, manualSwaps, acompDuration, rosterModel, holidayDates]);
 
+  const violations = useMemo(() => {
+    return validateRosterRest(roster, militares);
+  }, [roster, militares]);
+
   // Handlers
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -1079,8 +1085,18 @@ export default function App() {
               </h1>
             </div>
           </div>
-
+          
           <div className="flex items-center gap-4">
+            {violations.length > 0 && (
+              <button 
+                onClick={() => setModal({ type: 'ALERT', date: '', rowMilitaryId: 0, message: 'REST_VIOLATIONS' })}
+                className="flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/20 text-red-500 rounded-xl text-xs font-bold animate-pulse hover:bg-red-500/20 transition-colors"
+                title="Detectadas folgas menores que 2 dias"
+              >
+                <Bell className="w-4 h-4" />
+                <span>{violations.length} Alertas</span>
+              </button>
+            )}
             <button 
               onClick={openDailyExport}
               className="px-5 py-2.5 bg-white/5 border border-white/10 text-text-main rounded-xl text-xs font-black hover:bg-white/10 transition-all flex items-center gap-2"
@@ -1277,6 +1293,7 @@ export default function App() {
                   roster={roster} 
                   statusPeriods={statusPeriods}
                   holidayDates={holidayDates}
+                  violations={violations}
                   onCellClick={handleCellClick}
                   onHeaderClick={toggleHoliday}
                 />
@@ -1907,7 +1924,47 @@ export default function App() {
           </div>
         )}
 
-        {modal?.type === 'ALERT' && (
+        {modal?.type === 'ALERT' && modal.message === 'REST_VIOLATIONS' ? (
+          <div className="flex flex-col gap-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-red-500 rounded-2xl shadow-lg brass-glow">
+                <Bell className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <div className="label-tech mb-1">Segurança de Escala</div>
+                <h3 className="text-2xl font-display font-black text-text-main tracking-tight">Alertas de Descanso</h3>
+              </div>
+            </div>
+
+            <p className="text-sm text-text-muted leading-relaxed">
+              Detectamos militares com descanso inferior a 2 dias entre serviços. Verifique a ordem de antiguidade ou aplique trocas manuais para equilibrar a escala.
+            </p>
+
+            <div className="flex flex-col gap-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+              {violations.map((v, i) => (
+                <div key={i} className="p-4 bg-red-500/5 border border-red-500/10 rounded-2xl flex items-center justify-between gap-4">
+                  <div className="flex flex-col">
+                    <span className="font-display font-black text-red-500 text-sm tracking-tight">{v.militaryName}</span>
+                    <span className="text-[10px] text-text-muted font-mono uppercase tracking-widest leading-none mt-1">
+                      {format(parseISO(v.precedingDate), "dd MMM", { locale: ptBR })} ➔ {format(parseISO(v.violationDate), "dd MMM", { locale: ptBR })}
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-end">
+                    <span className="text-xs font-black text-text-main">{v.restDays} {v.restDays === 1 ? 'dia' : 'dias'} de folga</span>
+                    <span className="text-[9px] font-bold text-red-400 uppercase tracking-tighter">Violação</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button 
+              onClick={() => setModal(null)}
+              className="w-full px-6 py-4 bg-accent text-bg-main rounded-2xl text-sm font-black hover:brightness-110 shadow-lg brass-glow transition-all"
+            >
+              ENTENDIDO
+            </button>
+          </div>
+        ) : modal?.type === 'ALERT' && (
           <div className="flex flex-col items-center gap-8 py-6">
             <div className="p-6 bg-red-500/10 rounded-full border border-red-500/20">
               <AlertCircle className="w-16 h-16 text-red-400" />

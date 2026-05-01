@@ -1,16 +1,17 @@
 import React from 'react';
 import { format, parseISO, isWeekend } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Military, RosterEntry, StatusPeriod, STATUS_COLORS, STATUS_LABELS } from '../types';
+import { Military, RosterEntry, StatusPeriod, STATUS_COLORS, STATUS_LABELS, RestViolation } from '../types';
 import { getStatusAtivo, isMilitaryImpeded } from '../lib/rosterLogic';
 import { cn } from '../lib/utils';
-import { Zap, Ship, BookOpen, ArrowRightLeft } from 'lucide-react';
+import { Zap, Ship, BookOpen, ArrowRightLeft, AlertTriangle } from 'lucide-react';
 
 interface RosterTableProps {
   militares: Military[];
   roster: RosterEntry[];
   statusPeriods: StatusPeriod[];
   holidayDates: string[];
+  violations?: RestViolation[];
   onCellClick: (date: string, rowMilitaryId: number) => void;
   onHeaderClick?: (date: string) => void;
 }
@@ -20,6 +21,7 @@ export const RosterTable: React.FC<RosterTableProps> = ({
   roster, 
   statusPeriods,
   holidayDates,
+  violations = [],
   onCellClick,
   onHeaderClick
 }) => {
@@ -85,6 +87,8 @@ export const RosterTable: React.FC<RosterTableProps> = ({
                   const isAcompanhante = dayEntries.some(e => e.militaryId !== m.id && ((e.acompanhanteIds && e.acompanhanteIds.includes(m.id)) || e.acompanhanteId === m.id));
                   const isNavioPausa = dayEntries.every(e => e.status === 'NAVIO');
                   const isVerm = isWeekend(parseISO(dateStr)) || holidayDates.includes(dateStr);
+                  
+                  const violation = violations.find(v => v.militaryId === m.id && v.violationDate === dateStr);
 
                   let content = null;
                   let cellClass = "p-4 text-center border-r border-white/5 min-h-[80px] transition-all";
@@ -111,6 +115,11 @@ export const RosterTable: React.FC<RosterTableProps> = ({
                             <Zap className={cn("w-3.5 h-3.5 fill-accent text-accent", isVerm && "text-red-400 fill-red-400")} />
                           )}
                           {entry?.emNavio && <Ship className="w-3.5 h-3.5 text-white" />}
+                          {violation && (
+                            <div className="absolute top-0 right-0 p-1 animate-pulse">
+                              <AlertTriangle className="w-4 h-4 text-white fill-red-600" />
+                            </div>
+                          )}
                         </div>
                         {entry?.shift && (
                           <div className="text-[8px] font-mono font-bold text-white/90 bg-black/20 px-1.5 py-0.5 rounded border border-white/5">

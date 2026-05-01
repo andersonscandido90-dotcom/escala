@@ -7,7 +7,8 @@ import {
   isAfter,
   getHours,
   getMinutes,
-  isWeekend
+  isWeekend,
+  differenceInDays
 } from 'date-fns';
 import { 
   Military, 
@@ -16,7 +17,8 @@ import {
   ManualSwap, 
   RosterEntry, 
   StatusType,
-  RosterModel
+  RosterModel,
+  RestViolation
 } from '../types';
 
 export const STATUS_IMPEDITIVOS: StatusType[] = ['CURSO', 'FERIAS', 'DISPENSA_MEDICA', 'PATERNIDADE', 'LUTO', 'DESTACADO', 'PUNICAO'];
@@ -489,4 +491,43 @@ function applyManualSwaps(baseRoster: RosterEntry[], manualSwaps: ManualSwap[]):
   }
   
   return workingRoster;
+}
+
+export function validateRosterRest(roster: RosterEntry[], militares: Military[]): RestViolation[] {
+  const violations: RestViolation[] = [];
+  const lastServiceDate = new Map<number, string>();
+
+  // Use a map for fast name lookup
+  const nameMap = new Map(militares.map(m => [m.id, m.name]));
+
+  // Sort roster by date to ensure sequential processing
+  const sortedRoster = [...roster].sort((a, b) => a.data.localeCompare(b.data));
+
+  for (const entry of sortedRoster) {
+    if (entry.militaryId === null || entry.status !== 'SERVICO') continue;
+
+    const currentId = entry.militaryId;
+    const currentDateStr = entry.data;
+    const prevDateStr = lastServiceDate.get(currentId);
+
+    if (prevDateStr) {
+      const current = parseISO(currentDateStr);
+      const prev = parseISO(prevDateStr);
+      const diff = differenceInDays(current, prev) - 1; // days OFF
+
+      if (diff < 2) {
+        violations.push({
+          militaryId: currentId,
+          militaryName: nameMap.get(currentId) || 'Unknown',
+          precedingDate: prevDateStr,
+          violationDate: currentDateStr,
+          restDays: diff
+        });
+      }
+    }
+
+    lastServiceDate.set(currentId, currentDateStr);
+  }
+
+  return violations;
 }

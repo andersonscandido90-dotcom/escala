@@ -107,3 +107,11 @@ export interface RosterService {
     skipVermelha?: boolean;
   };
 }
+
+export interface RestViolation {
+  militaryId: number;
+  militaryName: string;
+  precedingDate: string;
+  violationDate: string;
+  restDays: number;
+}
