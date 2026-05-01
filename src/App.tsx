@@ -70,7 +70,8 @@ export default function App() {
     startDate: format(addDays(new Date(), 1), 'yyyy-MM-dd'),
     days: 30,
     quartoOrder: 'MODERNO_PRIMEIRO' as 'MODERNO_PRIMEIRO' | 'ANTIGO_PRIMEIRO',
-    quartoInternalOrder: 'MAIS_MODERNO' as 'MAIS_MODERNO' | 'MAIS_ANTIGO'
+    militaryOrder: 'MAIS_MODERNO' as 'MAIS_MODERNO' | 'MAIS_ANTIGO',
+    militaryOrderVermelha: 'MAIS_MODERNO' as 'MAIS_MODERNO' | 'MAIS_ANTIGO'
   });
 
   // IDs
@@ -144,7 +145,8 @@ export default function App() {
               startDate: format(addDays(new Date(), 1), 'yyyy-MM-dd'), 
               days: 30,
               quartoOrder: 'MODERNO_PRIMEIRO',
-              quartoInternalOrder: 'MAIS_MODERNO'
+              militaryOrder: 'MAIS_MODERNO',
+              militaryOrderVermelha: 'MAIS_MODERNO'
             }
           };
           setServices([initialService]);
@@ -190,7 +192,8 @@ export default function App() {
           startDate: format(addDays(new Date(), 1), 'yyyy-MM-dd'), 
           days: 30,
           quartoOrder: 'MODERNO_PRIMEIRO',
-          quartoInternalOrder: 'MAIS_MODERNO'
+          militaryOrder: 'MAIS_MODERNO',
+          militaryOrderVermelha: 'MAIS_MODERNO'
         }
       };
       setServices([initialService]);
@@ -212,7 +215,8 @@ export default function App() {
       startDate: service.config?.startDate || format(addDays(new Date(), 1), 'yyyy-MM-dd'),
       days: service.config?.days || 30,
       quartoOrder: service.config?.quartoOrder || 'MODERNO_PRIMEIRO',
-      quartoInternalOrder: service.config?.quartoInternalOrder || 'MAIS_MODERNO'
+      militaryOrder: service.config?.militaryOrder || 'MAIS_MODERNO',
+      militaryOrderVermelha: service.config?.militaryOrderVermelha || 'MAIS_MODERNO'
     });
     setServiceName(service.name);
   };
@@ -244,7 +248,8 @@ export default function App() {
           startDate: format(addDays(new Date(), 1), 'yyyy-MM-dd'), 
           days: 30,
           quartoOrder: 'MODERNO_PRIMEIRO',
-          quartoInternalOrder: 'MAIS_MODERNO'
+          militaryOrder: 'MAIS_MODERNO',
+          militaryOrderVermelha: 'MAIS_MODERNO'
         }
       };
       setServices(prev => [...prev, newService]);
@@ -325,7 +330,8 @@ export default function App() {
       currentModel,
       currentHoliday,
       srv.config.quartoOrder || 'MODERNO_PRIMEIRO',
-      srv.config.quartoInternalOrder || 'MAIS_MODERNO'
+      srv.config.militaryOrder || 'MAIS_MODERNO',
+      srv.config.militaryOrderVermelha || 'MAIS_MODERNO'
     );
 
     const srvWithLive = useLive ? {
@@ -787,7 +793,8 @@ export default function App() {
       rosterModel,
       holidayDates,
       config.quartoOrder,
-      config.quartoInternalOrder
+      config.militaryOrder,
+      config.militaryOrderVermelha
     );
   }, [config, militares, statusPeriods, shipPeriods, manualSwaps, acompDuration, rosterModel, holidayDates]);
 
@@ -1185,31 +1192,44 @@ export default function App() {
                   </select>
                 </div>
 
+                <div className="flex flex-col gap-2">
+                  <label className="label-tech text-accent">Ordem de Precedência (Escala Preta)</label>
+                  <select 
+                    value={config.militaryOrder || 'MAIS_MODERNO'}
+                    onChange={(e) => setConfig({ ...config, militaryOrder: e.target.value as any })}
+                    className="bg-bg-main border border-accent/20 rounded-xl px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main"
+                  >
+                    <option value="MAIS_MODERNO">Começar p/ Mais Moderno ➔ Mais Antigo</option>
+                    <option value="MAIS_ANTIGO">Começar p/ Mais Antigo ➔ Mais Moderno</option>
+                  </select>
+                </div>
+
+                {rosterModel === 'PRETA_VERMELHA' && (
+                  <div className="flex flex-col gap-2">
+                    <label className="label-tech text-secondary">Ordem de Precedência (Escala Vermelha/Domingo)</label>
+                    <select 
+                      value={config.militaryOrderVermelha || 'MAIS_MODERNO'}
+                      onChange={(e) => setConfig({ ...config, militaryOrderVermelha: e.target.value as any })}
+                      className="bg-bg-main border border-secondary/20 rounded-xl px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-secondary/50 text-text-main"
+                    >
+                      <option value="MAIS_MODERNO">Começar p/ Mais Moderno ➔ Mais Antigo</option>
+                      <option value="MAIS_ANTIGO">Começar p/ Mais Antigo ➔ Mais Moderno</option>
+                    </select>
+                  </div>
+                )}
+
                 {rosterModel.startsWith('QUARTOS') && (
-                  <>
-                    <div className="flex flex-col gap-2">
-                      <label className="label-tech text-accent">Ordem dos Quartos</label>
-                      <select 
-                        value={config.quartoOrder || 'MODERNO_PRIMEIRO'}
-                        onChange={(e) => setConfig({ ...config, quartoOrder: e.target.value as any })}
-                        className="bg-bg-main border border-accent/20 rounded-xl px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main"
-                      >
-                        <option value="MODERNO_PRIMEIRO">Do 4º p/ o 1º (Moderno Primeiro)</option>
-                        <option value="ANTIGO_PRIMEIRO">Do 1º p/ o 4º (Antigo Primeiro)</option>
-                      </select>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      <label className="label-tech text-accent">Ordem no Quarto</label>
-                      <select 
-                        value={config.quartoInternalOrder || 'MAIS_MODERNO'}
-                        onChange={(e) => setConfig({ ...config, quartoInternalOrder: e.target.value as any })}
-                        className="bg-bg-main border border-accent/20 rounded-xl px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main"
-                      >
-                        <option value="MAIS_MODERNO">Militar Mais Moderno Primeiro</option>
-                        <option value="MAIS_ANTIGO">Militar Mais Antigo Primeiro</option>
-                      </select>
-                    </div>
-                  </>
+                  <div className="flex flex-col gap-2">
+                    <label className="label-tech text-accent">Ordem de Rotação dos Quartos</label>
+                    <select 
+                      value={config.quartoOrder || 'MODERNO_PRIMEIRO'}
+                      onChange={(e) => setConfig({ ...config, quartoOrder: e.target.value as any })}
+                      className="bg-bg-main border border-accent/20 rounded-xl px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main"
+                    >
+                      <option value="MODERNO_PRIMEIRO">Do 4º p/ o 1º (Moderno p/ Antigo)</option>
+                      <option value="ANTIGO_PRIMEIRO">Do 1º p/ o 4º (Antigo p/ Moderno)</option>
+                    </select>
+                  </div>
                 )}
                 <div className="flex gap-3">
                   <button 

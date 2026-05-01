@@ -105,7 +105,8 @@ export function generateRoster(
   model: RosterModel = 'CORRIDA',
   holidayDates: string[] = [],
   quartoOrder: 'MODERNO_PRIMEIRO' | 'ANTIGO_PRIMEIRO' = 'MODERNO_PRIMEIRO',
-  quartoInternalOrder: 'MAIS_MODERNO' | 'MAIS_ANTIGO' = 'MAIS_MODERNO'
+  militaryOrder: 'MAIS_MODERNO' | 'MAIS_ANTIGO' = 'MAIS_MODERNO',
+  militaryOrderVermelha: 'MAIS_MODERNO' | 'MAIS_ANTIGO' = 'MAIS_MODERNO'
 ): RosterEntry[] {
   if (militares.length === 0) return [];
 
@@ -118,7 +119,11 @@ export function generateRoster(
 
   // Internal sorting: default is Most Modern first (Highest antiguidade)
   const sortedMilitares = [...militares].sort((a, b) => 
-    quartoInternalOrder === 'MAIS_MODERNO' ? b.antiguidade - a.antiguidade : a.antiguidade - b.antiguidade
+    militaryOrder === 'MAIS_MODERNO' ? b.antiguidade - a.antiguidade : a.antiguidade - b.antiguidade
+  );
+
+  const sortedMilitaresVermelha = [...militares].sort((a, b) => 
+    militaryOrderVermelha === 'MAIS_MODERNO' ? b.antiguidade - a.antiguidade : a.antiguidade - b.antiguidade
   );
 
   const acompanhanteCounters = new Map<number, number>();
@@ -182,7 +187,8 @@ export function generateRoster(
           let titular: Military | null = null;
           if (i < countPerDay) {
             if (baseModel === 'PRETA_VERMELHA') {
-              const res = findNextTitular(dateStr, isVermelha ? nextIndexVermelha : nextIndexPreta, sortedMilitares, statusPeriods, frozenMilitaries.map(m => m.id));
+              const list = isVermelha ? sortedMilitaresVermelha : sortedMilitares;
+              const res = findNextTitular(dateStr, isVermelha ? nextIndexVermelha : nextIndexPreta, list, statusPeriods, frozenMilitaries.map(m => m.id));
               titular = res.titular;
               if (isVermelha) nextIndexVermelha = res.newIndex;
               else nextIndexPreta = res.newIndex;
@@ -262,7 +268,8 @@ export function generateRoster(
       let titular: Military | null = null;
       if (i < countPerDay) {
         if (baseModel === 'PRETA_VERMELHA') {
-          const res = findNextTitular(dateStr, isVermelha ? nextIndexVermelha : nextIndexPreta, sortedMilitares, statusPeriods, dayTitulars.map(m => m.id));
+          const list = isVermelha ? sortedMilitaresVermelha : sortedMilitares;
+          const res = findNextTitular(dateStr, isVermelha ? nextIndexVermelha : nextIndexPreta, list, statusPeriods, dayTitulars.map(m => m.id));
           titular = res.titular;
           if (isVermelha) nextIndexVermelha = res.newIndex;
           else nextIndexPreta = res.newIndex;

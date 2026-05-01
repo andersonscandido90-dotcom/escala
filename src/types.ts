@@ -100,6 +100,7 @@ export interface RosterService {
     startDate: string; 
     days: number;
     quartoOrder?: 'MODERNO_PRIMEIRO' | 'ANTIGO_PRIMEIRO';
-    quartoInternalOrder?: 'MAIS_MODERNO' | 'MAIS_ANTIGO';
+    militaryOrder?: 'MAIS_MODERNO' | 'MAIS_ANTIGO';
+    militaryOrderVermelha?: 'MAIS_MODERNO' | 'MAIS_ANTIGO';
   };
 }
