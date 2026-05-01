@@ -785,7 +785,7 @@ export default function App() {
         logos
       }));
     }
-  }, [services, activeServiceId, activeTab, signatureData, exportMappings]);
+  }, [services, activeServiceId, activeTab, signatureData, exportMappings, logos]);
 
   // Generate Roster
   const roster = useMemo(() => {

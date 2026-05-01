@@ -54,18 +54,36 @@ export const exportDailyDetailPDF = (data: DailyExportData) => {
   };
 
   // Header
-  // Drawings logos if present
-  if (data.navyLogo) {
+  // OM Heraldry on the LEFT, MB Symbol on the RIGHT as per standard MB documents
+  if (data.shipLogo && data.shipLogo.trim() !== '') {
     try {
-      // Navy Logo on the Left
-      doc.addImage(data.navyLogo, 'PNG', 10, 5, 20, 20);
-    } catch(e) { console.error('Error drawing navy logo', e); }
+      let format: 'PNG' | 'JPEG' | 'WEBP' = 'PNG';
+      if (data.shipLogo.includes('image/jpeg') || data.shipLogo.includes('image/jpg')) format = 'JPEG';
+      if (data.shipLogo.includes('image/webp')) format = 'WEBP';
+      
+      doc.addImage(data.shipLogo, format, 15, 5, 22, 22, undefined, 'FAST');
+    } catch(e) { 
+      console.error('Error drawing ship logo', e);
+      try {
+        doc.addImage(data.shipLogo, 15, 5, 22, 22);
+      } catch (e2) {}
+    }
   }
-  if (data.shipLogo) {
+
+  if (data.navyLogo && data.navyLogo.trim() !== '') {
     try {
-      // Ship Logo on the Right
-      doc.addImage(data.shipLogo, 'PNG', pageWidth - 30, 5, 20, 20);
-    } catch(e) { console.error('Error drawing ship logo', e); }
+      let format: 'PNG' | 'JPEG' | 'WEBP' = 'PNG';
+      if (data.navyLogo.includes('image/jpeg') || data.navyLogo.includes('image/jpg')) format = 'JPEG';
+      if (data.navyLogo.includes('image/webp')) format = 'WEBP';
+
+      // Position from the right: pageWidth - width - margin
+      doc.addImage(data.navyLogo, format, pageWidth - 37, 5, 22, 22, undefined, 'FAST');
+    } catch(e) { 
+      console.error('Error drawing navy logo', e);
+      try {
+        doc.addImage(data.navyLogo, pageWidth - 37, 5, 22, 22);
+      } catch (e2) {}
+    }
   }
 
   doc.setFontSize(10);
@@ -83,15 +101,15 @@ export const exportDailyDetailPDF = (data: DailyExportData) => {
     head: [['SERVIÇO', '08 - 12h / 20 - 24h', '12 - 16h / 00 - 04h', 'MÁSCARAS', '16 - 20h / 04 - 08h', 'MÁSCARAS']],
     body: [
       [
-        { content: 'FIEL DAS AUXILIARES', styles: { fontStyle: 'bold' } },
-        formatName(data.fielAux[0]), 
-        formatName(data.fielAux[1]), 
-        '46 a 54',
-        formatName(data.fielAux[2]),
-        '64 a 72'
+        { content: 'FIEL DAS AUXILIARES', styles: { fontStyle: 'bold', fillColor: [245, 247, 250] } },
+        { content: formatName(data.fielAux[0]), styles: { fontStyle: 'bold', fillColor: [245, 247, 250] } }, 
+        { content: formatName(data.fielAux[1]), styles: { fontStyle: 'bold', fillColor: [245, 247, 250] } }, 
+        { content: '46 a 54', styles: { fillColor: [245, 247, 250] } },
+        { content: formatName(data.fielAux[2]), styles: { fontStyle: 'bold', fillColor: [245, 247, 250] } },
+        { content: '64 a 72', styles: { fillColor: [245, 247, 250] } }
       ],
       [
-        { content: 'RETÉNS:', styles: { fontStyle: 'bold' } }, 
+        { content: 'RETÉNS:', styles: { fontStyle: 'bold', textColor: [100, 100, 100] } }, 
         formatName(data.retenFielAux[0]), 
         formatName(data.retenFielAux[1]), 
         { content: '', styles: { cellPadding: 0 } }, 
@@ -99,7 +117,7 @@ export const exportDailyDetailPDF = (data: DailyExportData) => {
         { content: '', styles: { cellPadding: 0 } }
       ],
       [
-        { content: 'ACOMPANHANDO:', styles: { fontStyle: 'bold' } },
+        { content: 'ACOMPANHANDO:', styles: { fontStyle: 'bold', textColor: [100, 100, 100] } },
         formatNameList(data.acompFielAux[0]), 
         formatNameList(data.acompFielAux[1]), 
         { content: '', styles: { cellPadding: 0 } }, 
@@ -107,15 +125,15 @@ export const exportDailyDetailPDF = (data: DailyExportData) => {
         { content: '', styles: { cellPadding: 0 } }
       ],
       [
-        { content: 'PATRULHA DO CAV', styles: { fontStyle: 'bold' } },
-        formatName(data.patrulhaCav[0]), 
-        formatName(data.patrulhaCav[1]), 
-        '55 a 63',
-        formatName(data.patrulhaCav[2]),
-        '73 a 81'
+        { content: 'PATRULHA DO CAV', styles: { fontStyle: 'bold', fillColor: [245, 247, 250] } },
+        { content: formatName(data.patrulhaCav[0]), styles: { fontStyle: 'bold', fillColor: [245, 247, 250] } }, 
+        { content: formatName(data.patrulhaCav[1]), styles: { fontStyle: 'bold', fillColor: [245, 247, 250] } }, 
+        { content: '55 a 63', styles: { fillColor: [245, 247, 250] } },
+        { content: formatName(data.patrulhaCav[2]), styles: { fontStyle: 'bold', fillColor: [245, 247, 250] } },
+        { content: '73 a 81', styles: { fillColor: [245, 247, 250] } }
       ],
       [
-        { content: 'RETÉM:', styles: { fontStyle: 'bold' } }, 
+        { content: 'RETÉM:', styles: { fontStyle: 'bold', textColor: [100, 100, 100] } }, 
         formatName(data.retenPatrulhaCav[0]), 
         formatName(data.retenPatrulhaCav[1]), 
         { content: '', styles: { cellPadding: 0 } }, 
@@ -123,7 +141,7 @@ export const exportDailyDetailPDF = (data: DailyExportData) => {
         { content: '', styles: { cellPadding: 0 } }
       ],
       [
-        { content: 'ACOMPANHANDO:', styles: { fontStyle: 'bold' } },
+        { content: 'ACOMPANHANDO:', styles: { fontStyle: 'bold', textColor: [100, 100, 100] } },
         formatNameList(data.acompPatrulhaCav[0]), 
         formatNameList(data.acompPatrulhaCav[1]), 
         { content: '', styles: { cellPadding: 0 } }, 
@@ -133,7 +151,7 @@ export const exportDailyDetailPDF = (data: DailyExportData) => {
     ],
     theme: 'grid',
     styles: { fontSize: 8.5, halign: 'center', cellPadding: 2, textColor: [0, 0, 0], valign: 'middle' },
-    headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold', halign: 'center' },
+    headStyles: { fillColor: [40, 60, 100], textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' },
     columnStyles: { 
       0: { cellWidth: 45 },
       3: { cellWidth: 22, fontStyle: 'bold', textColor: [80, 80, 80] },
@@ -152,22 +170,22 @@ export const exportDailyDetailPDF = (data: DailyExportData) => {
     margin: { right: midPoint + 5 },
     head: [['SERVIÇO DIÁRIO', 'MILITAR']],
     body: [
-      [{ content: 'SUPERVISOR DA MÁQUINA', styles: { fontStyle: 'bold' } }, formatName(data.supervisorMaq)],
-      [{ content: 'RETÉM:', styles: { fontStyle: 'bold' } }, formatName(data.retenMaq)],
-      [{ content: 'ACOMPANHANDO:', styles: { fontStyle: 'bold' } }, formatNameList(data.acompMaq)],
-      [{ content: 'FIEL DE CAV DE SERVIÇO', styles: { fontStyle: 'bold' } }, formatName(data.fielCav)],
-      [{ content: 'RETÉM:', styles: { fontStyle: 'bold' } }, formatName(data.retenCav)],
-      [{ content: 'ACOMPANHANDO:', styles: { fontStyle: 'bold' } }, formatNameList(data.acompCav)],
-      [{ content: 'SUPERVISOR "MO"', styles: { fontStyle: 'bold' } }, formatName(data.supervisorMO)],
-      [{ content: 'RETÉM:', styles: { fontStyle: 'bold' } }, formatName(data.retenMO)],
-      [{ content: 'ACOMPANHANDO:', styles: { fontStyle: 'bold' } }, formatNameList(data.acompMO)],
-      [{ content: 'SUPERVISOR "EL"', styles: { fontStyle: 'bold' } }, formatName(data.supervisorEL)],
-      [{ content: 'RETÉM:', styles: { fontStyle: 'bold' } }, formatName(data.retenEL)],
-      [{ content: 'ACOMPANHANDO:', styles: { fontStyle: 'bold' } }, formatNameList(data.acompEL)],
+      [{ content: 'SUPERVISOR DA MÁQUINA', styles: { fontStyle: 'bold', fillColor: [245, 247, 250] } }, { content: formatName(data.supervisorMaq), styles: { fontStyle: 'bold', fillColor: [245, 247, 250] } }],
+      [{ content: 'RETÉM:', styles: { fontStyle: 'bold', textColor: [100, 100, 100] } }, formatName(data.retenMaq)],
+      [{ content: 'ACOMPANHANDO:', styles: { fontStyle: 'bold', textColor: [100, 100, 100] } }, formatNameList(data.acompMaq)],
+      [{ content: 'FIEL DE CAV DE SERVIÇO', styles: { fontStyle: 'bold', fillColor: [245, 247, 250] } }, { content: formatName(data.fielCav), styles: { fontStyle: 'bold', fillColor: [245, 247, 250] } }],
+      [{ content: 'RETÉM:', styles: { fontStyle: 'bold', textColor: [100, 100, 100] } }, formatName(data.retenCav)],
+      [{ content: 'ACOMPANHANDO:', styles: { fontStyle: 'bold', textColor: [100, 100, 100] } }, formatNameList(data.acompCav)],
+      [{ content: 'SUPERVISOR "MO"', styles: { fontStyle: 'bold', fillColor: [245, 247, 250] } }, { content: formatName(data.supervisorMO), styles: { fontStyle: 'bold', fillColor: [245, 247, 250] } }],
+      [{ content: 'RETÉM:', styles: { fontStyle: 'bold', textColor: [100, 100, 100] } }, formatName(data.retenMO)],
+      [{ content: 'ACOMPANHANDO:', styles: { fontStyle: 'bold', textColor: [100, 100, 100] } }, formatNameList(data.acompMO)],
+      [{ content: 'SUPERVISOR "EL"', styles: { fontStyle: 'bold', fillColor: [245, 247, 250] } }, { content: formatName(data.supervisorEL), styles: { fontStyle: 'bold', fillColor: [245, 247, 250] } }],
+      [{ content: 'RETÉM:', styles: { fontStyle: 'bold', textColor: [100, 100, 100] } }, formatName(data.retenEL)],
+      [{ content: 'ACOMPANHANDO:', styles: { fontStyle: 'bold', textColor: [100, 100, 100] } }, formatNameList(data.acompEL)],
     ],
     theme: 'grid',
     styles: { fontSize: 8, halign: 'center', cellPadding: 1.5, textColor: [0, 0, 0] },
-    headStyles: { fillColor: [220, 220, 220], textColor: [0, 0, 0], fontStyle: 'bold', fontSize: 8, halign: 'center' },
+    headStyles: { fillColor: [40, 60, 100], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8, halign: 'center' },
     columnStyles: { 0: { cellWidth: 50, fontSize: 8 } }
   });
 
@@ -179,11 +197,11 @@ export const exportDailyDetailPDF = (data: DailyExportData) => {
     margin: { left: midPoint + 5 },
     head: [['DEPARTAMENTO MÁQUINAS', 'MILITAR']],
     body: [
-      [{ content: 'CABO DE DIA', styles: { fontStyle: 'bold' } }, formatName(data.caboDia)],
+      [{ content: 'CABO DE DIA', styles: { fontStyle: 'bold', fillColor: [245, 247, 250] } }, { content: formatName(data.caboDia), styles: { fontStyle: 'bold', fillColor: [245, 247, 250] } }],
     ],
     theme: 'grid',
     styles: { fontSize: 8, halign: 'center', cellPadding: 1.2, textColor: [0, 0, 0] },
-    headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontSize: 8, halign: 'center' },
+    headStyles: { fillColor: [40, 60, 100], textColor: [255, 255, 255], fontSize: 8, halign: 'center' },
     columnStyles: { 0: { cellWidth: 45, fontSize: 8 } }
   });
 
