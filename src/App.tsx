@@ -273,7 +273,6 @@ export default function App() {
       { key: 'fielCav', terms: ['fiel', 'cav'] },
       { key: 'supervisorMO', terms: ['sup', 'mo'] },
       { key: 'supervisorEL', terms: ['sup', 'el'] },
-      { key: 'caboDia', terms: ['cabo'] },
     ];
 
     mappingKeys.forEach(m => {
@@ -576,7 +575,7 @@ export default function App() {
     data.retenEL = getRetem(exportMappings['supervisorEL'], modal.date);
     data.acompEL = getAcompForScale(exportMappings['supervisorEL'], modal.date);
 
-    data.caboDia = getShiftInfo(exportMappings['caboDia'], modal.date);
+    data.caboDia = data.fielAux[0];
 
     // Boys distribution logic
     // source_08_12 = { f: data.fielAux[0], p: data.patrulhaCav[0] }
@@ -1773,7 +1772,6 @@ export default function App() {
                   { key: 'fielCav', label: 'Fiel de CAV' },
                   { key: 'supervisorMO', label: 'Supervisor "MO"' },
                   { key: 'supervisorEL', label: 'Supervisor "EL"' },
-                  { key: 'caboDia', label: 'Cabo de Dia' },
                 ].map(item => (
                   <div key={item.key} className="flex flex-col gap-1">
                     <label className={cn(
