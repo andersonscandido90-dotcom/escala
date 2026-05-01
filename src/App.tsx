@@ -71,7 +71,8 @@ export default function App() {
     days: 30,
     quartoOrder: 'MODERNO_PRIMEIRO' as 'MODERNO_PRIMEIRO' | 'ANTIGO_PRIMEIRO',
     militaryOrder: 'MAIS_MODERNO' as 'MAIS_MODERNO' | 'MAIS_ANTIGO',
-    militaryOrderVermelha: 'MAIS_MODERNO' as 'MAIS_MODERNO' | 'MAIS_ANTIGO'
+    militaryOrderVermelha: 'MAIS_MODERNO' as 'MAIS_MODERNO' | 'MAIS_ANTIGO',
+    skipVermelha: false
   });
 
   // IDs
@@ -146,7 +147,8 @@ export default function App() {
               days: 30,
               quartoOrder: 'MODERNO_PRIMEIRO',
               militaryOrder: 'MAIS_MODERNO',
-              militaryOrderVermelha: 'MAIS_MODERNO'
+              militaryOrderVermelha: 'MAIS_MODERNO',
+              skipVermelha: false
             }
           };
           setServices([initialService]);
@@ -193,7 +195,8 @@ export default function App() {
           days: 30,
           quartoOrder: 'MODERNO_PRIMEIRO',
           militaryOrder: 'MAIS_MODERNO',
-          militaryOrderVermelha: 'MAIS_MODERNO'
+          militaryOrderVermelha: 'MAIS_MODERNO',
+          skipVermelha: false
         }
       };
       setServices([initialService]);
@@ -216,7 +219,8 @@ export default function App() {
       days: service.config?.days || 30,
       quartoOrder: service.config?.quartoOrder || 'MODERNO_PRIMEIRO',
       militaryOrder: service.config?.militaryOrder || 'MAIS_MODERNO',
-      militaryOrderVermelha: service.config?.militaryOrderVermelha || 'MAIS_MODERNO'
+      militaryOrderVermelha: service.config?.militaryOrderVermelha || 'MAIS_MODERNO',
+      skipVermelha: service.config?.skipVermelha || false
     });
     setServiceName(service.name);
   };
@@ -249,7 +253,8 @@ export default function App() {
           days: 30,
           quartoOrder: 'MODERNO_PRIMEIRO',
           militaryOrder: 'MAIS_MODERNO',
-          militaryOrderVermelha: 'MAIS_MODERNO'
+          militaryOrderVermelha: 'MAIS_MODERNO',
+          skipVermelha: false
         }
       };
       setServices(prev => [...prev, newService]);
@@ -330,7 +335,8 @@ export default function App() {
       currentHoliday,
       srv.config.quartoOrder || 'MODERNO_PRIMEIRO',
       srv.config.militaryOrder || 'MAIS_MODERNO',
-      srv.config.militaryOrderVermelha || 'MAIS_MODERNO'
+      srv.config.militaryOrderVermelha || 'MAIS_MODERNO',
+      srv.config.skipVermelha || false
     );
 
     const srvWithLive = useLive ? {
@@ -793,7 +799,8 @@ export default function App() {
       holidayDates,
       config.quartoOrder,
       config.militaryOrder,
-      config.militaryOrderVermelha
+      config.militaryOrderVermelha,
+      config.skipVermelha
     );
   }, [config, militares, statusPeriods, shipPeriods, manualSwaps, acompDuration, rosterModel, holidayDates]);
 
@@ -1230,6 +1237,20 @@ export default function App() {
                     </select>
                   </div>
                 )}
+
+                <div className="flex items-center gap-3 py-2 px-1">
+                  <input 
+                    type="checkbox"
+                    id="skipVermelha"
+                    checked={config.skipVermelha || false}
+                    onChange={(e) => setConfig({ ...config, skipVermelha: e.target.checked })}
+                    className="w-5 h-5 rounded border-accent/20 bg-bg-main text-accent focus:ring-accent/50"
+                  />
+                  <label htmlFor="skipVermelha" className="text-sm font-medium text-text-main cursor-pointer select-none">
+                    Não escalar em Domingos/Feriados (Rotina de Domingo)
+                  </label>
+                </div>
+
                 <div className="flex gap-3">
                   <button 
                     onClick={() => setIsFullScreen(true)}

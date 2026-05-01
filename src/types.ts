@@ -10,7 +10,8 @@ export type StatusType =
   | 'SERVICO'
   | 'DESTACADO'
   | 'PUNICAO'
-  | 'TROCA';
+  | 'TROCA'
+  | 'DISPENSA';
 
 export type RosterModel = 
   | 'CORRIDA' | 'CORRIDA_2' | 'CORRIDA_3' 
@@ -57,6 +58,7 @@ export interface RosterEntry {
   acompanhanteId?: number | null; // Keep for backward compatibility if needed, but will prefer list
   status: StatusType;
   emNavio: boolean;
+  isSundayRoutine?: boolean;
   shift?: string;
   externalName?: string;
 }
@@ -102,5 +104,6 @@ export interface RosterService {
     quartoOrder?: 'MODERNO_PRIMEIRO' | 'ANTIGO_PRIMEIRO';
     militaryOrder?: 'MAIS_MODERNO' | 'MAIS_ANTIGO';
     militaryOrderVermelha?: 'MAIS_MODERNO' | 'MAIS_ANTIGO';
+    skipVermelha?: boolean;
   };
 }

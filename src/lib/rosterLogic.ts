@@ -106,7 +106,8 @@ export function generateRoster(
   holidayDates: string[] = [],
   quartoOrder: 'MODERNO_PRIMEIRO' | 'ANTIGO_PRIMEIRO' = 'MODERNO_PRIMEIRO',
   militaryOrder: 'MAIS_MODERNO' | 'MAIS_ANTIGO' = 'MAIS_MODERNO',
-  militaryOrderVermelha: 'MAIS_MODERNO' | 'MAIS_ANTIGO' = 'MAIS_MODERNO'
+  militaryOrderVermelha: 'MAIS_MODERNO' | 'MAIS_ANTIGO' = 'MAIS_MODERNO',
+  skipVermelha: boolean = false
 ): RosterEntry[] {
   if (militares.length === 0) return [];
 
@@ -173,6 +174,16 @@ export function generateRoster(
 
     if (shipStatus.type === 'PAUSA_TOTAL') {
       roster.push({ data: dateStr, militaryId: null, acompanhanteId: null, status: 'NAVIO', emNavio: true });
+      incrementAcompanhanteCounters(dateStr, militares, statusPeriods, acompanhanteCounters);
+      currentDate = addDays(currentDate, 1);
+      continue;
+    }
+
+    if (skipVermelha && isVermelha) {
+      // Just push empty entries for each shift/position
+      for (let i = 0; i < countPerDay; i++) {
+        roster.push({ data: dateStr, militaryId: null, acompanhanteId: null, status: 'DISPENSA', emNavio: false, isSundayRoutine: true });
+      }
       incrementAcompanhanteCounters(dateStr, militares, statusPeriods, acompanhanteCounters);
       currentDate = addDays(currentDate, 1);
       continue;
