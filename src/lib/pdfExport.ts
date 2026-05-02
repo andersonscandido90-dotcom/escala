@@ -101,12 +101,12 @@ export const exportDailyDetailPDF = (data: DailyExportData) => {
     head: [['SERVIÇO', '08 - 12h / 20 - 24h', '12 - 16h / 00 - 04h', 'MÁSCARAS', '16 - 20h / 04 - 08h', 'MÁSCARAS']],
     body: [
       [
-        { content: 'FIEL DAS AUXILIARES', styles: { fontStyle: 'bold', fillColor: [245, 247, 250] } },
-        { content: formatName(data.fielAux[0]), styles: { fontStyle: 'bold', fillColor: [245, 247, 250] } }, 
-        { content: formatName(data.fielAux[1]), styles: { fontStyle: 'bold', fillColor: [245, 247, 250] } }, 
-        { content: '46 a 54', styles: { fillColor: [245, 247, 250] } },
-        { content: formatName(data.fielAux[2]), styles: { fontStyle: 'bold', fillColor: [245, 247, 250] } },
-        { content: '64 a 72', styles: { fillColor: [245, 247, 250] } }
+        { content: 'FIEL DAS AUXILIARES', styles: { fontStyle: 'bold', fillColor: [220, 230, 245] } },
+        { content: formatName(data.fielAux[0]), styles: { fontStyle: 'bold', fillColor: [220, 230, 245] } }, 
+        { content: formatName(data.fielAux[1]), styles: { fontStyle: 'bold', fillColor: [220, 230, 245] } }, 
+        { content: '46 a 54', styles: { fillColor: [220, 230, 245], fontStyle: 'bold' } },
+        { content: formatName(data.fielAux[2]), styles: { fontStyle: 'bold', fillColor: [220, 230, 245] } },
+        { content: '64 a 72', styles: { fillColor: [220, 230, 245], fontStyle: 'bold' } }
       ],
       [
         { content: 'RETÉNS:', styles: { fontStyle: 'bold', textColor: [100, 100, 100] } }, 
@@ -125,12 +125,12 @@ export const exportDailyDetailPDF = (data: DailyExportData) => {
         { content: '', styles: { cellPadding: 0 } }
       ],
       [
-        { content: 'PATRULHA DO CAV', styles: { fontStyle: 'bold', fillColor: [245, 247, 250] } },
-        { content: formatName(data.patrulhaCav[0]), styles: { fontStyle: 'bold', fillColor: [245, 247, 250] } }, 
-        { content: formatName(data.patrulhaCav[1]), styles: { fontStyle: 'bold', fillColor: [245, 247, 250] } }, 
-        { content: '55 a 63', styles: { fillColor: [245, 247, 250] } },
-        { content: formatName(data.patrulhaCav[2]), styles: { fontStyle: 'bold', fillColor: [245, 247, 250] } },
-        { content: '73 a 81', styles: { fillColor: [245, 247, 250] } }
+        { content: 'PATRULHA DO CAV', styles: { fontStyle: 'bold', fillColor: [220, 230, 245] } },
+        { content: formatName(data.patrulhaCav[0]), styles: { fontStyle: 'bold', fillColor: [220, 230, 245] } }, 
+        { content: formatName(data.patrulhaCav[1]), styles: { fontStyle: 'bold', fillColor: [220, 230, 245] } }, 
+        { content: '55 a 63', styles: { fillColor: [220, 230, 245], fontStyle: 'bold' } },
+        { content: formatName(data.patrulhaCav[2]), styles: { fontStyle: 'bold', fillColor: [220, 230, 245] } },
+        { content: '73 a 81', styles: { fillColor: [220, 230, 245], fontStyle: 'bold' } }
       ],
       [
         { content: 'RETÉM:', styles: { fontStyle: 'bold', textColor: [100, 100, 100] } }, 
@@ -170,16 +170,16 @@ export const exportDailyDetailPDF = (data: DailyExportData) => {
     margin: { right: midPoint + 5 },
     head: [['SERVIÇO DIÁRIO', 'MILITAR']],
     body: [
-      [{ content: 'SUPERVISOR DA MÁQUINA', styles: { fontStyle: 'bold', fillColor: [245, 247, 250] } }, { content: formatName(data.supervisorMaq), styles: { fontStyle: 'bold', fillColor: [245, 247, 250] } }],
+      [{ content: 'SUPERVISOR DA MÁQUINA', styles: { fontStyle: 'bold', fillColor: [220, 230, 245] } }, { content: formatName(data.supervisorMaq), styles: { fontStyle: 'bold', fillColor: [220, 230, 245] } }],
       [{ content: 'RETÉM:', styles: { fontStyle: 'bold', textColor: [100, 100, 100] } }, formatName(data.retenMaq)],
       [{ content: 'ACOMPANHANDO:', styles: { fontStyle: 'bold', textColor: [100, 100, 100] } }, formatNameList(data.acompMaq)],
-      [{ content: 'FIEL DE CAV DE SERVIÇO', styles: { fontStyle: 'bold', fillColor: [245, 247, 250] } }, { content: formatName(data.fielCav), styles: { fontStyle: 'bold', fillColor: [245, 247, 250] } }],
+      [{ content: 'FIEL DE CAV DE SERVIÇO', styles: { fontStyle: 'bold', fillColor: [220, 230, 245] } }, { content: formatName(data.fielCav), styles: { fontStyle: 'bold', fillColor: [220, 230, 245] } }],
       [{ content: 'RETÉM:', styles: { fontStyle: 'bold', textColor: [100, 100, 100] } }, formatName(data.retenCav)],
       [{ content: 'ACOMPANHANDO:', styles: { fontStyle: 'bold', textColor: [100, 100, 100] } }, formatNameList(data.acompCav)],
-      [{ content: 'SUPERVISOR "MO"', styles: { fontStyle: 'bold', fillColor: [245, 247, 250] } }, { content: formatName(data.supervisorMO), styles: { fontStyle: 'bold', fillColor: [245, 247, 250] } }],
+      [{ content: 'SUPERVISOR "MO"', styles: { fontStyle: 'bold', fillColor: [220, 230, 245] } }, { content: formatName(data.supervisorMO), styles: { fontStyle: 'bold', fillColor: [220, 230, 245] } }],
       [{ content: 'RETÉM:', styles: { fontStyle: 'bold', textColor: [100, 100, 100] } }, formatName(data.retenMO)],
       [{ content: 'ACOMPANHANDO:', styles: { fontStyle: 'bold', textColor: [100, 100, 100] } }, formatNameList(data.acompMO)],
-      [{ content: 'SUPERVISOR "EL"', styles: { fontStyle: 'bold', fillColor: [245, 247, 250] } }, { content: formatName(data.supervisorEL), styles: { fontStyle: 'bold', fillColor: [245, 247, 250] } }],
+      [{ content: 'SUPERVISOR "EL"', styles: { fontStyle: 'bold', fillColor: [220, 230, 245] } }, { content: formatName(data.supervisorEL), styles: { fontStyle: 'bold', fillColor: [220, 230, 245] } }],
       [{ content: 'RETÉM:', styles: { fontStyle: 'bold', textColor: [100, 100, 100] } }, formatName(data.retenEL)],
       [{ content: 'ACOMPANHANDO:', styles: { fontStyle: 'bold', textColor: [100, 100, 100] } }, formatNameList(data.acompEL)],
     ],
@@ -197,7 +197,7 @@ export const exportDailyDetailPDF = (data: DailyExportData) => {
     margin: { left: midPoint + 5 },
     head: [['DEPARTAMENTO MÁQUINAS', 'MILITAR']],
     body: [
-      [{ content: 'CABO DE DIA', styles: { fontStyle: 'bold', fillColor: [245, 247, 250] } }, { content: formatName(data.caboDia), styles: { fontStyle: 'bold', fillColor: [245, 247, 250] } }],
+      [{ content: 'CABO DE DIA', styles: { fontStyle: 'bold', fillColor: [220, 230, 245] } }, { content: formatName(data.caboDia), styles: { fontStyle: 'bold', fillColor: [220, 230, 245] } }],
     ],
     theme: 'grid',
     styles: { fontSize: 8, halign: 'center', cellPadding: 1.2, textColor: [0, 0, 0] },
