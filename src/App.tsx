@@ -175,25 +175,55 @@ export default function App() {
       }
     } else {
       // Default initial data
-      const initialMilitares = Array.from({ length: 16 }, (_, i) => ({
+      const names = [
+        'ANDRE VINICIUS', 'SILVA JUNIOR', 'SANTOS', 'FERREIRA', 
+        'OLIVEIRA', 'COSTA', 'RODRIGUES', 'ALMEIDA', 
+        'PIMENTA', 'GOMES', 'MARTINS', 'CARVALHO',
+        'TEIXEIRA', 'MACHADO', 'NEVES', 'SOUSA'
+      ];
+      const ranks = ['3SG', 'CB', 'CB', 'MN', 'MN', 'MN', '3SG', 'CB', 'CB', 'MN', 'MN', 'MN', '3SG', 'CB', 'CB', 'MN'];
+      const specs = ['MO', 'MO', 'MO', 'MO', 'MO', 'MO', 'EL', 'EL', 'EL', 'EL', 'EL', 'EL', 'MR', 'MR', 'MR', 'MR'];
+
+      const initialMilitares: Military[] = names.map((name, i) => ({
         id: i + 1,
-        name: `Militar ${String(i + 1).padStart(2, '0')}`,
+        name,
+        posto: ranks[i],
+        especialidade: specs[i],
         quarto: (i % 4) + 1,
         antiguidade: i + 1
       }));
+
+      const today = new Date();
+      const nextWeek = addDays(today, 7);
+      const nextWeekEnd = addDays(today, 10);
+
       const initialService: RosterService = {
         id: Date.now(),
         name: "Escala Geral",
         militares: initialMilitares,
-        statusPeriods: [],
-        shipPeriods: [],
+        statusPeriods: [
+          {
+            id: 1,
+            militaryId: 5,
+            type: 'FERIAS',
+            start: format(today, 'yyyy-MM-dd'),
+            end: format(addDays(today, 15), 'yyyy-MM-dd')
+          }
+        ],
+        shipPeriods: [
+          {
+            id: 1,
+            start: format(nextWeek, "yyyy-MM-dd'T'09:00"),
+            end: format(nextWeekEnd, "yyyy-MM-dd'T'17:00")
+          }
+        ],
         manualSwaps: [],
         acompDuration: 3,
-        rosterModel: 'CORRIDA',
+        rosterModel: 'QUARTOS',
         holidayDates: [],
-        nextIds: { military: 17, status: 1, ship: 1 },
+        nextIds: { military: 17, status: 2, ship: 2 },
         config: { 
-          startDate: format(addDays(new Date(), 1), 'yyyy-MM-dd'), 
+          startDate: format(addDays(today, 1), 'yyyy-MM-dd'), 
           days: 30,
           quartoOrder: 'MODERNO_PRIMEIRO',
           militaryOrder: 'MAIS_MODERNO',
@@ -201,7 +231,29 @@ export default function App() {
           skipVermelha: false
         }
       };
-      setServices([initialService]);
+
+      const secondService: RosterService = {
+        id: Date.now() + 1,
+        name: "Escala de Manutenção",
+        militares: initialMilitares.slice(0, 8),
+        statusPeriods: [],
+        shipPeriods: [],
+        manualSwaps: [],
+        acompDuration: 1,
+        rosterModel: 'CORRIDA',
+        holidayDates: [],
+        nextIds: { military: 9, status: 1, ship: 1 },
+        config: { 
+          startDate: format(addDays(today, 1), 'yyyy-MM-dd'), 
+          days: 30,
+          quartoOrder: 'MODERNO_PRIMEIRO',
+          militaryOrder: 'MAIS_MODERNO',
+          militaryOrderVermelha: 'MAIS_MODERNO',
+          skipVermelha: false
+        }
+      };
+
+      setServices([initialService, secondService]);
       setActiveServiceId(initialService.id);
       loadServiceData(initialService);
     }
