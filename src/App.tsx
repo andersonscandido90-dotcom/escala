@@ -176,18 +176,18 @@ export default function App() {
     } else {
       // Default initial data
       const names = [
-        'MILITAR 01', 'MILITAR 02', 'MILITAR 03', 'MILITAR 04', 
-        'MILITAR 05', 'MILITAR 06', 'MILITAR 07', 'MILITAR 08', 
-        'MILITAR 09', 'MILITAR 10', 'MILITAR 11', 'MILITAR 12',
-        'MILITAR 13', 'MILITAR 14', 'MILITAR 15', 'MILITAR 16'
+        'ANDRE VINICIUS', 'SILVA JUNIOR', 'SANTOS', 'FERREIRA', 
+        'OLIVEIRA', 'COSTA', 'RODRIGUES', 'ALMEIDA', 
+        'PIMENTA', 'GOMES', 'MARTINS', 'CARVALHO',
+        'TEIXEIRA', 'MACHADO', 'NEVES', 'SOUSA'
       ];
-      const ranks = ['CB', 'CB', 'CB', 'CB', 'CB', 'CB', 'CB', 'CB', 'CB', 'CB', 'CB', 'CB', 'CB', 'CB', 'CB', 'CB'];
-      const specs = ['MO', 'MO', 'MO', 'MO', 'MO', 'MO', 'EL', 'EL', 'EL', 'EL', 'EL', 'EL', 'MC', 'MC', 'MT', 'MT'];
+      const ranks = ['3SG', 'CB', 'CB', 'MN', 'MN', 'MN', '3SG', 'CB', 'CB', 'MN', 'MN', 'MN', '3SG', 'CB', 'CB', 'MN'];
+      const specs = ['MO', 'MO', 'MO', 'MO', 'MO', 'MO', 'EL', 'EL', 'EL', 'EL', 'EL', 'EL', 'MR', 'MR', 'MR', 'MR'];
 
       const initialMilitares: Military[] = names.map((name, i) => ({
         id: i + 1,
         name,
-        grad: ranks[i],
+        posto: ranks[i],
         especialidade: specs[i],
         quarto: (i % 4) + 1,
         antiguidade: i + 1
@@ -1137,7 +1137,7 @@ export default function App() {
             NAM ATLÂNTICO
           </div>
           <div className="text-[10px] font-mono font-bold tracking-[0.3em] text-text-muted">
-            A140 • SUPERVISÃO
+            Candido app
           </div>
         </div>
 
@@ -1410,7 +1410,7 @@ export default function App() {
                 </div>
 
                 <div className="flex flex-col gap-2 w-full lg:w-auto">
-                  <label className="label-tech text-accent">Ordem (Preta)</label>
+                  <label className="label-tech text-accent">Ordem</label>
                   <select 
                     value={config.militaryOrder || 'MAIS_MODERNO'}
                     onChange={(e) => setConfig({ ...config, militaryOrder: e.target.value as any })}

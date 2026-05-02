@@ -27,10 +27,10 @@ export const ShipManager: React.FC<ShipManagerProps> = ({
   return (
     <div className="flex flex-col gap-6 lg:gap-8">
       <div className="glass-panel p-4 lg:p-8 rounded-2xl lg:rounded-[2rem] border border-white/5 shadow-2xl">
-        <div className="label-tech mb-1 text-[8px] lg:text-[10px]">Módulo de Operações</div>
+        <div className="label-tech mb-1 text-[8px] lg:text-[10px]">Comissões</div>
         <h3 className="text-lg lg:text-xl font-display font-black text-text-main tracking-tight mb-4 lg:mb-8 flex items-center gap-3">
           <Ship className="w-5 h-5 lg:w-6 lg:h-6 text-accent" />
-          Registrar Missão
+          Registrar Suspender
         </h3>
         <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6 items-end">
           <div className="flex flex-col gap-1.5 lg:gap-2">
@@ -109,7 +109,7 @@ export const ShipManager: React.FC<ShipManagerProps> = ({
         ))}
         {shipPeriods.length === 0 && (
           <div className="py-16 text-center text-text-muted font-mono text-sm font-bold uppercase tracking-widest glass-panel rounded-[2rem] border border-dashed border-white/10">
-            Nenhuma missão operacional agendada.
+            Nenhuma Comissão agendada.
           </div>
         )}
       </div>
