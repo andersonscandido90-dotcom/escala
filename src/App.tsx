@@ -176,18 +176,18 @@ export default function App() {
     } else {
       // Default initial data
       const names = [
-        'ANDRE VINICIUS', 'SILVA JUNIOR', 'SANTOS', 'FERREIRA', 
-        'OLIVEIRA', 'COSTA', 'RODRIGUES', 'ALMEIDA', 
-        'PIMENTA', 'GOMES', 'MARTINS', 'CARVALHO',
-        'TEIXEIRA', 'MACHADO', 'NEVES', 'SOUSA'
+        'MILITAR 01', 'MILITAR 02', 'MILITAR 03', 'MILITAR 04', 
+        'MILITAR 05', 'MILITAR 06', 'MILITAR 07', 'MILITAR 08', 
+        'MILITAR 09', 'MILITAR 10', 'MILITAR 11', 'MILITAR 12',
+        'MILITAR 13', 'MILITAR 14', 'MILITAR 15', 'MILITAR 16'
       ];
-      const ranks = ['3SG', 'CB', 'CB', 'MN', 'MN', 'MN', '3SG', 'CB', 'CB', 'MN', 'MN', 'MN', '3SG', 'CB', 'CB', 'MN'];
-      const specs = ['MO', 'MO', 'MO', 'MO', 'MO', 'MO', 'EL', 'EL', 'EL', 'EL', 'EL', 'EL', 'MR', 'MR', 'MR', 'MR'];
+      const ranks = ['CB', 'CB', 'CB', 'CB', 'CB', 'CB', 'CB', 'CB', 'CB', 'CB', 'CB', 'CB', 'CB', 'CB', 'CB', 'CB'];
+      const specs = ['MO', 'MO', 'MO', 'MO', 'MO', 'MO', 'EL', 'EL', 'EL', 'EL', 'EL', 'EL', 'MC', 'MC', 'MT', 'MT'];
 
       const initialMilitares: Military[] = names.map((name, i) => ({
         id: i + 1,
         name,
-        posto: ranks[i],
+        grad: ranks[i],
         especialidade: specs[i],
         quarto: (i % 4) + 1,
         antiguidade: i + 1
