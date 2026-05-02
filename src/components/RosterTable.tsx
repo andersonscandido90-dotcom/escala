@@ -33,8 +33,8 @@ export const RosterTable: React.FC<RosterTableProps> = ({
         <table className="w-full border-collapse text-sm font-mono table-fixed">
           <thead className="sticky top-0 z-[60]">
             <tr className="bg-bg-card border-b border-white/5 text-text-main">
-              <th className="sticky top-0 left-0 z-[70] bg-bg-card p-6 text-left border-r border-white/5 min-w-[240px] w-[240px]">
-                <div className="label-tech">Operador / Militar</div>
+              <th className="sticky top-0 left-0 z-[70] bg-bg-card p-3 lg:p-6 text-left border-r border-white/5 min-w-[140px] w-[140px] lg:min-w-[240px] lg:w-[240px]">
+                <div className="label-tech text-[8px] lg:text-[10px]">Militar</div>
               </th>
               {dates.map(date => {
                 const d = parseISO(date);
@@ -44,18 +44,18 @@ export const RosterTable: React.FC<RosterTableProps> = ({
                     key={date} 
                     onClick={() => onHeaderClick?.(date)}
                     className={cn(
-                      "sticky top-0 z-[60] p-4 text-center min-w-[120px] w-[120px] border-r border-white/5 transition-colors cursor-pointer hover:bg-white/10 bg-bg-card",
+                      "sticky top-0 z-[60] p-2 lg:p-4 text-center min-w-[80px] w-[80px] lg:min-w-[120px] lg:w-[120px] border-r border-white/5 transition-colors cursor-pointer hover:bg-white/10 bg-bg-card",
                       isVerm && "bg-red-500/5"
                     )}
                   >
                     <div className={cn(
-                      "text-[10px] font-bold uppercase tracking-widest mb-1",
+                      "text-[8px] lg:text-[10px] font-bold uppercase tracking-widest mb-0.5 lg:mb-1",
                       isVerm ? "text-red-400" : "text-accent"
                     )}>
                       {format(d, 'EEE', { locale: ptBR })}
                     </div>
                     <div className={cn(
-                      "text-sm font-black",
+                      "text-[10px] lg:text-sm font-black",
                       isVerm ? "text-red-400" : "text-text-main"
                     )}>
                       {format(d, 'dd/MM')}
@@ -68,14 +68,14 @@ export const RosterTable: React.FC<RosterTableProps> = ({
           <tbody>
             {militares.map((m, idx) => (
               <tr key={m.id} className="group hover:bg-white/5 transition-colors border-b border-white/5 last:border-0">
-                <td className="sticky left-0 z-10 bg-bg-card p-6 font-bold text-text-main border-r border-white/5 shadow-[10px_0_20px_-10px_rgba(0,0,0,0.5)]">
-                  <div className="flex items-center gap-4">
-                    <span className="text-[10px] bg-white/5 text-accent px-2.5 py-1 rounded-lg font-black border border-white/5">
+                <td className="sticky left-0 z-10 bg-bg-card p-3 lg:p-6 font-bold text-text-main border-r border-white/5 shadow-[10px_0_20px_-10px_rgba(0,0,0,0.5)]">
+                  <div className="flex items-center gap-2 lg:gap-4">
+                    <span className="hidden sm:inline text-[10px] bg-white/5 text-accent px-2.5 py-1 rounded-lg font-black border border-white/5">
                       {String(idx + 1).padStart(2, '0')}
                     </span>
-                    <div className="flex flex-col">
-                      <span className="tracking-tight font-display font-bold leading-none">{m.name}</span>
-                      <span className="text-[9px] text-text-muted mt-1 font-mono font-bold uppercase tracking-widest">{m.quarto || 1}º QUARTO</span>
+                    <div className="flex flex-col min-w-0">
+                      <span className="tracking-tight font-display font-bold leading-tight truncate text-xs lg:text-sm">{m.name}</span>
+                      <span className="text-[7px] lg:text-[9px] text-text-muted mt-0.5 lg:mt-1 font-mono font-bold uppercase tracking-widest">{m.quarto || 1}º Q</span>
                     </div>
                   </div>
                 </td>
@@ -91,17 +91,17 @@ export const RosterTable: React.FC<RosterTableProps> = ({
                   const violation = violations.find(v => v.militaryId === m.id && v.violationDate === dateStr);
 
                   let content = null;
-                  let cellClass = "p-4 text-center border-r border-white/5 min-h-[80px] transition-all";
+                  let cellClass = "p-2 lg:p-4 text-center border-r border-white/5 min-h-[60px] lg:min-h-[80px] transition-all";
 
                   if (isNavioPausa) {
                     cellClass = cn(cellClass, "bg-bg-main/40 text-text-muted opacity-20");
-                    content = <Ship className="w-5 h-5 mx-auto opacity-50" />;
+                    content = <Ship className="w-4 h-4 lg:w-5 lg:h-5 mx-auto opacity-50" />;
                   } else if (isTitular) {
                     cellClass = cn(cellClass, "bg-primary text-white shadow-inner relative overflow-hidden");
                     if (isVerm) cellClass = cn(cellClass, "brightness-110 brass-glow");
                     content = (
-                      <div className="flex flex-col items-center gap-1.5 relative z-10">
-                        <div className="flex items-center gap-1.5 font-black text-[11px] uppercase tracking-wider">
+                      <div className="flex flex-col items-center gap-1 relative z-10">
+                        <div className="flex items-center gap-1 font-black text-[9px] lg:text-[11px] uppercase tracking-wider">
                           <span className={cn(
                             "text-accent", 
                             isVerm && "text-red-400",
@@ -110,24 +110,18 @@ export const RosterTable: React.FC<RosterTableProps> = ({
                             {entry?.status === 'TROCA' ? 'TROCA' : 'SERV'}
                           </span> 
                           {entry?.status === 'TROCA' ? (
-                            <ArrowRightLeft className="w-3.5 h-3.5 text-purple-400" />
+                            <ArrowRightLeft className="w-2.5 h-2.5 lg:w-3.5 lg:h-3.5 text-purple-400" />
                           ) : (
-                            <Zap className={cn("w-3.5 h-3.5 fill-accent text-accent", isVerm && "text-red-400 fill-red-400")} />
-                          )}
-                          {entry?.emNavio && <Ship className="w-3.5 h-3.5 text-white" />}
-                          {violation && (
-                            <div className="absolute top-0 right-0 p-1 animate-pulse">
-                              <AlertTriangle className="w-4 h-4 text-white fill-red-600" />
-                            </div>
+                            <Zap className={cn("w-2.5 h-2.5 lg:w-3.5 lg:h-3.5 fill-accent text-accent", isVerm && "text-red-400 fill-red-400")} />
                           )}
                         </div>
                         {entry?.shift && (
-                          <div className="text-[8px] font-mono font-bold text-white/90 bg-black/20 px-1.5 py-0.5 rounded border border-white/5">
+                          <div className="text-[7px] lg:text-[8px] font-mono font-bold text-white/90 bg-black/20 px-1 py-0.5 rounded border border-white/5 truncate max-w-full">
                             {entry.shift}
                           </div>
                         )}
                         {entry?.acompanhanteIds && entry.acompanhanteIds.length > 0 && (
-                          <div className="flex flex-col gap-0.5 mt-1">
+                          <div className="hidden lg:flex flex-col gap-0.5 mt-1">
                             {entry.acompanhanteIds.map(aid => (
                               <div key={aid} className="text-[8px] font-bold opacity-90 truncate max-w-[100px] bg-white/10 px-2 py-0.5 rounded-full">
                                 + {militares.find(mil => mil.id === aid)?.name.split(' ')[0]}
@@ -135,17 +129,14 @@ export const RosterTable: React.FC<RosterTableProps> = ({
                             ))}
                           </div>
                         )}
-                        <div className="absolute -right-4 -bottom-4 opacity-10">
-                          <Zap className="w-12 h-12" />
-                        </div>
                       </div>
                     );
                   } else if (isAcompanhante) {
                     cellClass = cn(cellClass, "bg-primary-light/40 text-white");
                     content = (
-                      <div className="flex flex-col items-center gap-1">
-                        <BookOpen className="w-3.5 h-3.5 text-accent" />
-                        <span className="text-[10px] font-black uppercase tracking-tighter text-accent">ACOMP</span>
+                      <div className="flex flex-col items-center gap-0.5 lg:gap-1">
+                        <BookOpen className="w-3 h-3 lg:w-3.5 lg:h-3.5 text-accent" />
+                        <span className="text-[8px] lg:text-[10px] font-black uppercase tracking-tighter text-accent">ACOMP</span>
                       </div>
                     );
                   } else if (statusAtivo) {
@@ -155,8 +146,8 @@ export const RosterTable: React.FC<RosterTableProps> = ({
                                            statusAtivo === 'PUNICAO' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/20' :
                                            'bg-red-500/20 text-red-400 border border-red-500/20';
                     
-                    cellClass = cn(cellClass, navalStatusColor, "font-black text-[10px] uppercase tracking-tighter");
-                    content = <span className="animate-pulse-subtle">{STATUS_LABELS[statusAtivo] || statusAtivo}</span>;
+                    cellClass = cn(cellClass, navalStatusColor, "font-black text-[8px] lg:text-[10px] uppercase tracking-tighter");
+                    content = <span className="animate-pulse-subtle truncate max-w-full px-1">{STATUS_LABELS[statusAtivo] || statusAtivo}</span>;
                   } else {
                     content = <span className="text-white/5">—</span>;
                   }

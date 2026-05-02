@@ -124,68 +124,62 @@ export const Dashboard: React.FC<DashboardProps> = ({
       variants={containerVariants}
       initial="hidden"
       animate="show"
-      className="flex flex-col gap-10 pb-20"
+      className="flex flex-col gap-6 lg:gap-10 pb-20"
     >
       {/* Stat Cards Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
         <StatCard 
-          title="Efetivo Cadastrado" 
+          title="Efetivo" 
           value={militares.length} 
-          icon={<Users className="w-5 h-5 text-accent" />} 
-          subtitle="Militares no sistema"
-          trend="+0 este mês"
+          icon={<Users className="w-4 h-4 lg:w-5 lg:h-5 text-accent" />} 
+          subtitle="Militares"
         />
         <StatCard 
-          title="Serviços Totais" 
+          title="Serviços" 
           value={stats.totalServices} 
-          icon={<Zap className="w-5 h-5 text-accent" />} 
-          subtitle="Gerados em escala"
-          trend="Escaleta Ativa"
+          icon={<Zap className="w-4 h-4 lg:w-5 lg:h-5 text-accent" />} 
+          subtitle="Totais"
         />
         <StatCard 
-          title="Impedimentos Ativos" 
+          title="Indisponíveis" 
           value={stats.currentImpediments.length} 
-          icon={<ShieldAlert className="w-5 h-5 text-red-400" />} 
-          subtitle="Indisponíveis hoje"
+          icon={<ShieldAlert className="w-4 h-4 lg:w-5 lg:h-5 text-red-400" />} 
+          subtitle="Hoje"
           variant="danger"
         />
         <StatCard 
-          title="Engajamento Operacional" 
+          title="Operacional" 
           value={stats.shipDays} 
-          icon={<Ship className="w-5 h-5 text-blue-400" />} 
-          subtitle="Dias de mar registrados"
+          icon={<Ship className="w-4 h-4 lg:w-5 lg:h-5 text-blue-400" />} 
+          subtitle="Dias de Mar"
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Analytics Chart */}
-        <motion.div variants={itemVariants} className="lg:col-span-2 glass-panel p-8 rounded-[2.5rem] border border-white/5 shadow-2xl relative overflow-hidden">
+        <motion.div variants={itemVariants} className="lg:col-span-2 glass-panel p-4 lg:p-8 rounded-2xl lg:rounded-[2.5rem] border border-white/5 shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 right-0 p-8 opacity-5">
             <Activity className="w-32 h-32" />
           </div>
-          <div className="flex justify-between items-start mb-10 relative z-10">
+          <div className="flex justify-between items-start mb-6 lg:mb-10 relative z-10">
             <div>
-              <div className="label-tech mb-2">Monitoramento de Carga</div>
-              <h3 className="text-2xl font-display font-black text-text-main tracking-tight">Top 10 Frequência de Serviço</h3>
-              <p className="text-sm text-text-muted mt-1">Comparativo de alocação entre o efetivo</p>
-            </div>
-            <div className="flex gap-2">
-              <div className="px-3 py-1 bg-white/5 rounded-full text-[10px] font-bold text-text-muted border border-white/5 uppercase tracking-wider">Últimos 30 dias</div>
+              <div className="label-tech mb-2">Carga de Trabalho</div>
+              <h3 className="text-lg lg:text-2xl font-display font-black text-text-main tracking-tight">Frequência</h3>
             </div>
           </div>
-          <div className="h-[340px] relative z-10">
+          <div className="h-[240px] lg:h-[340px] relative z-10">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={stats.chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(148, 163, 184, 0.05)" />
                 <XAxis 
                   dataKey="name" 
-                  fontSize={10} 
+                  fontSize={8} 
                   tickLine={false} 
                   axisLine={false} 
                   tick={{ fill: '#94A3B8', fontWeight: 'bold' }}
                 />
                 <YAxis 
-                  fontSize={10} 
+                  fontSize={8} 
                   tickLine={false} 
                   axisLine={false} 
                   tick={{ fill: '#94A3B8', fontWeight: 'bold' }} 
@@ -194,15 +188,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   cursor={{ fill: 'rgba(255, 255, 255, 0.03)' }}
                   contentStyle={{ 
                     backgroundColor: '#0F172A', 
-                    borderRadius: '20px', 
+                    borderRadius: '12px', 
                     border: '1px solid rgba(255, 255, 255, 0.1)', 
-                    boxShadow: '0 20px 50px rgba(0,0,0,0.6)',
-                    padding: '12px 16px'
+                    boxShadow: '0 10px 30px rgba(0,0,0,0.6)',
+                    padding: '8px 12px'
                   }}
-                  itemStyle={{ color: '#F1F5F9', fontSize: '13px', fontWeight: '800' }}
-                  labelStyle={{ color: '#94A3B8', marginBottom: '4px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}
+                  itemStyle={{ color: '#F1F5F9', fontSize: '11px', fontWeight: '800' }}
+                  labelStyle={{ color: '#94A3B8', marginBottom: '2px', fontSize: '10px', textTransform: 'uppercase' }}
                 />
-                <Bar dataKey="servicos" radius={[8, 8, 0, 0]}>
+                <Bar dataKey="servicos" radius={[4, 4, 0, 0]}>
                   {stats.chartData.map((_entry, index) => (
                     <RechartsCell key={`cell-${index}`} fill={index === 0 ? '#C5A059' : 'rgba(197, 160, 89, 0.4)'} />
                   ))}
@@ -213,38 +207,37 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </motion.div>
 
         {/* Current Impediments List */}
-        <motion.div variants={itemVariants} className="glass-panel p-8 rounded-[2.5rem] border border-white/5 shadow-2xl flex flex-col">
-          <div className="mb-8">
-            <div className="label-tech mb-2">Situação de Pessoal</div>
-            <h3 className="text-xl font-display font-black text-text-main tracking-tight flex items-center gap-2">
-              <Bell className="w-5 h-5 text-accent" />
-              Impedimentos Atuais
+        <motion.div variants={itemVariants} className="glass-panel p-4 lg:p-8 rounded-2xl lg:rounded-[2.5rem] border border-white/5 shadow-2xl flex flex-col">
+          <div className="mb-6 lg:mb-8">
+            <div className="label-tech mb-2">Pessoal</div>
+            <h3 className="text-lg lg:text-xl font-display font-black text-text-main tracking-tight flex items-center gap-2">
+              <Bell className="w-4 h-4 lg:w-5 lg:h-5 text-accent" />
+              Impedimentos
             </h3>
-            <p className="text-xs text-text-muted mt-1">Status do efetivo no dia de hoje</p>
           </div>
 
-          <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-3 max-h-[400px]">
+          <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-2 max-h-[300px] lg:max-h-[400px]">
             {stats.currentImpediments.length > 0 ? (
               stats.currentImpediments.map((item, i) => (
-                <div key={i} className="flex items-center gap-4 p-4 bg-white/5 border border-white/5 rounded-2xl group hover:bg-white/10 transition-all">
-                  <div className="w-10 h-10 rounded-xl bg-red-400/10 border border-red-400/20 flex items-center justify-center text-red-400 font-bold shrink-0">
+                <div key={i} className="flex items-center gap-3 p-3 bg-white/5 border border-white/5 rounded-xl group hover:bg-white/10 transition-all">
+                  <div className="w-8 h-8 rounded-lg bg-red-400/10 border border-red-400/20 flex items-center justify-center text-red-400 text-xs font-bold shrink-0">
                     {item.militar?.posto?.charAt(0) || 'M'}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-black text-text-main truncate group-hover:text-accent transition-colors">{item.militar?.name}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="px-1.5 py-0.5 bg-red-400/20 text-red-400 text-[8px] font-black rounded border border-red-400/30 uppercase tracking-wider">
+                    <p className="text-[10px] lg:text-xs font-black text-text-main truncate group-hover:text-accent transition-colors">{item.militar?.name}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="px-1.5 py-0.5 bg-red-400/20 text-red-400 text-[7px] font-black rounded border border-red-400/30 uppercase tracking-wider">
                         {STATUS_LABELS[item.period.type as keyof typeof STATUS_LABELS] || item.period.type}
                       </span>
-                      <span className="text-[9px] text-text-muted font-mono">té {format(parseISO(item.period.endDate), 'dd/MM')}</span>
+                      <span className="text-[8px] text-text-muted font-mono leading-none">até {format(parseISO(item.period.endDate), 'dd/MM')}</span>
                     </div>
                   </div>
                 </div>
               ))
             ) : (
-              <div className="flex flex-col items-center justify-center h-full py-10 opacity-40">
-                <CheckCircle2 className="w-12 h-12 mb-4" />
-                <p className="text-sm font-bold">Todo Efetivo Disponível</p>
+              <div className="flex flex-col items-center justify-center h-full py-10 opacity-30">
+                <CheckCircle2 className="w-10 h-10 mb-2" />
+                <p className="text-[10px] font-bold uppercase tracking-widest">Disponível</p>
               </div>
             )}
           </div>
@@ -252,19 +245,21 @@ export const Dashboard: React.FC<DashboardProps> = ({
       </div>
 
       {/* Second Row: Distributions and Configs */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <motion.div variants={itemVariants} className="glass-panel p-8 rounded-[2.5rem] border border-white/5 shadow-2xl">
-          <div className="label-tech mb-2">Composição de Quadro</div>
-          <h3 className="text-xl font-display font-black text-text-main tracking-tight mb-8">Tipos de Restrições Registradas</h3>
-          <div className="h-[280px]">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+        <motion.div variants={itemVariants} className="glass-panel p-4 lg:p-8 rounded-2xl lg:rounded-[2.5rem] border border-white/5 shadow-2xl">
+          <div className="label-tech mb-2">Composição</div>
+          <h3 className="text-lg lg:text-xl font-display font-black text-text-main tracking-tight mb-6 lg:mb-8 text-center sm:text-left">Restrições Registradas</h3>
+          <div className="h-[220px] lg:h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={stats.pieData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={65}
-                  outerRadius={95}
+                  innerRadius={50}
+                  outerRadius={75}
+                  lg:innerRadius={65}
+                  lg:outerRadius={95}
                   paddingAngle={8}
                   dataKey="value"
                 >
@@ -273,14 +268,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   ))}
                 </Pie>
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#0F172A', borderRadius: '16px', border: '1px solid rgba(255, 255, 255, 0.1)', color: '#fff' }}
-                  itemStyle={{ fontWeight: 'bold' }}
+                  contentStyle={{ backgroundColor: '#0F172A', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.1)', color: '#fff', fontSize: '11px' }}
                 />
                 <Legend 
                   verticalAlign="bottom" 
                   height={36} 
                   iconType="circle" 
-                  wrapperStyle={{ fontSize: '10px', fontWeight: '800', color: '#94A3B8', paddingTop: '24px', textTransform: 'uppercase', letterSpacing: '0.05em' }} 
+                  wrapperStyle={{ fontSize: '9px', fontWeight: '800', color: '#94A3B8', paddingTop: '12px', textTransform: 'uppercase' }} 
                 />
               </PieChart>
             </ResponsiveContainer>
@@ -288,27 +282,27 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </motion.div>
 
         {/* Unified Config & Backup Card */}
-        <motion.div variants={itemVariants} className="glass-panel p-8 rounded-[2.5rem] border border-white/5 shadow-2xl flex flex-col justify-between">
+        <motion.div variants={itemVariants} className="glass-panel p-4 lg:p-8 rounded-2xl lg:rounded-[2.5rem] border border-white/5 shadow-2xl flex flex-col justify-between gap-8">
           <div>
-            <div className="flex justify-between items-start mb-8">
+            <div className="flex justify-between items-start mb-6">
               <div>
-                <div className="label-tech mb-2">Instância & Sistema</div>
-                <h3 className="text-xl font-display font-black text-text-main tracking-tight">Configurações Gerais</h3>
+                <div className="label-tech mb-2">Administração</div>
+                <h3 className="text-lg lg:text-xl font-display font-black text-text-main tracking-tight">Configurações</h3>
               </div>
-              <div className="p-3 bg-accent/10 rounded-2xl">
-                <Settings className="w-5 h-5 text-accent" />
+              <div className="p-2 lg:p-3 bg-accent/10 rounded-xl lg:rounded-2xl border border-accent/10">
+                <Settings className="w-4 h-4 lg:w-5 lg:h-5 text-accent" />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-8 mb-10">
+            <div className="grid grid-cols-2 gap-4 lg:gap-8 mb-4 lg:mb-10">
               <LogoUploadCard 
-                title="Símbolo Nacional / MB"
+                title="Símbolo MB"
                 logo={logos.navy}
                 onUpload={(e) => onLogoUpload('navy', e)}
                 onRemove={() => onRemoveLogo('navy')}
               />
               <LogoUploadCard 
-                title="Heraldica do Navio / OM"
+                title="Heraldica"
                 logo={logos.ship}
                 onUpload={(e) => onLogoUpload('ship', e)}
                 onRemove={() => onRemoveLogo('ship')}
@@ -316,26 +310,25 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
           </div>
 
-          <div className="space-y-4 pt-6 border-t border-white/5">
-            <div className="flex items-center gap-2 mb-2">
-              <History className="w-4 h-4 text-accent" />
-              <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">Contingência e Backup</span>
+          <div className="space-y-4 pt-4 lg:pt-6 border-t border-white/5">
+            <div className="flex items-center gap-2 mb-1 lg:mb-2">
+              <History className="w-3.5 h-3.5 lg:w-4 h-4 text-accent" />
+              <span className="text-[9px] lg:text-[10px] font-black text-text-muted uppercase tracking-widest">Backup</span>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4">
               <button 
                 onClick={onExportBackup}
-                className="flex items-center justify-center gap-3 px-6 py-4 bg-accent text-bg-main rounded-2xl text-[10px] font-black shadow-lg hover:brightness-110 transition-all brass-glow uppercase tracking-wider"
+                className="flex items-center justify-center gap-3 px-4 lg:px-6 py-3 lg:py-4 bg-accent text-bg-main rounded-xl lg:rounded-2xl text-[9px] lg:text-[10px] font-black shadow-lg hover:brightness-110 transition-all brass-glow uppercase"
               >
-                <Download className="w-4 h-4" />
-                Exportar Dados
+                <Download className="w-3.5 h-3.5 lg:w-4 h-4" />
+                Exportar
               </button>
-              <label className="flex items-center justify-center gap-3 px-6 py-4 bg-white/5 border border-white/10 text-text-main rounded-2xl text-[10px] font-black hover:bg-white/10 transition-all cursor-pointer uppercase tracking-wider">
-                <RotateCcw className="w-4 h-4" />
-                Restaurar Backup
+              <label className="flex items-center justify-center gap-3 px-4 lg:px-6 py-3 lg:py-4 bg-white/5 border border-white/10 text-text-main rounded-xl lg:rounded-2xl text-[9px] lg:text-[10px] font-black hover:bg-white/10 transition-all cursor-pointer uppercase">
+                <RotateCcw className="w-3.5 h-3.5 lg:w-4 h-4" />
+                Importar
                 <input type="file" accept=".json" onChange={onImportBackup} className="hidden" />
               </label>
             </div>
-            <p className="text-[9px] text-text-muted text-center font-mono uppercase opacity-50 tracking-widest">Última alteração salva localmente em tempo real</p>
           </div>
         </motion.div>
       </div>
@@ -396,36 +389,30 @@ const StatCard = ({ title, value, icon, subtitle, trend, variant = 'default' }: 
       hidden: { opacity: 0, y: 15 },
       show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }
     }}
-    className="glass-panel p-7 rounded-[2.5rem] border border-white/5 shadow-2xl flex flex-col gap-6 relative overflow-hidden group hover:border-accent/30 transition-all duration-500"
+    className="glass-panel p-4 lg:p-7 rounded-2xl lg:rounded-[2.5rem] border border-white/5 shadow-2xl flex flex-col gap-3 lg:gap-6 relative overflow-hidden group hover:border-accent/30 transition-all duration-500"
   >
     <div className="flex justify-between items-start relative z-10">
       <div className="flex flex-col">
-        <p className="text-[10px] font-mono font-black text-text-muted uppercase tracking-[0.15em] mb-2">{title}</p>
+        <p className="text-[7px] lg:text-[10px] font-mono font-black text-text-muted uppercase tracking-widest mb-1 lg:mb-2">{title}</p>
         <p className={cn(
-          "text-4xl font-display font-black tracking-tighter tabular-nums",
+          "text-xl lg:text-4xl font-display font-black tracking-tighter tabular-nums",
           variant === 'danger' ? 'text-red-400' : 'text-text-main'
         )}>{value}</p>
       </div>
       <div className={cn(
-        "p-3.5 rounded-2xl border transition-all duration-500 group-hover:scale-110",
+        "p-2 lg:p-3.5 rounded-lg lg:rounded-2xl border transition-all duration-500 group-hover:scale-110",
         variant === 'danger' ? 'bg-red-400/10 border-red-400/20' : 'bg-white/5 border-white/5 group-hover:bg-accent/10 group-hover:border-accent/20'
       )}>
         {icon}
       </div>
     </div>
     
-    <div className="space-y-1 relative z-10">
-      <div className="text-[9px] font-mono font-black text-text-muted tracking-widest uppercase">{subtitle}</div>
-      {trend && (
-        <div className="text-[8px] font-black text-accent flex items-center gap-1.5 uppercase tracking-tighter">
-          <Activity className="w-3 h-3" />
-          {trend}
-        </div>
-      )}
+    <div className="space-y-0.5 lg:space-y-1 relative z-10">
+      <div className="text-[7px] lg:text-[9px] font-mono font-black text-text-muted tracking-widest uppercase truncate">{subtitle}</div>
     </div>
 
     {/* Background Decorative Element */}
-    <div className="absolute -right-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.07] transition-all duration-700 blur-xl scale-150 rotate-12">
+    <div className="absolute -right-2 -bottom-2 opacity-[0.03] group-hover:opacity-[0.07] transition-all duration-700 blur-lg scale-125 rotate-12">
       {icon}
     </div>
   </motion.div>

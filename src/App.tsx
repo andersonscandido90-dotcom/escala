@@ -1167,58 +1167,59 @@ export default function App() {
       </aside>
 
       {/* Main Content */}
-      <main className="lg:ml-[260px] p-10 flex flex-col gap-8 technical-grid min-h-screen">
+      <main className="lg:ml-[260px] p-4 lg:p-10 flex flex-col gap-6 lg:gap-8 technical-grid min-h-screen pb-24 lg:pb-10">
         {/* Header */}
-        <header className="flex items-center justify-between glass-panel p-6 rounded-3xl border border-white/5 shadow-2xl">
-          <div className="flex items-center gap-6">
+        <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between glass-panel p-4 lg:p-6 rounded-2xl lg:rounded-3xl border border-white/5 shadow-2xl gap-4 sm:gap-0">
+          <div className="flex items-center gap-4 lg:gap-6">
             <div className="flex items-center gap-3">
               {logos.ship ? (
-                <img src={logos.ship} alt="Ship" className="w-14 h-14 object-contain" />
+                <img src={logos.ship} alt="Ship" className="w-10 h-10 lg:w-14 lg:h-14 object-contain" />
               ) : logos.navy ? (
-                <img src={logos.navy} alt="Navy" className="w-14 h-14 object-contain" />
+                <img src={logos.navy} alt="Navy" className="w-10 h-10 lg:w-14 lg:h-14 object-contain" />
               ) : (
-                <div className="p-3 bg-accent/10 rounded-2xl border border-accent/20">
-                  <ShieldAlert className="w-6 h-6 text-accent" />
+                <div className="p-2 lg:p-3 bg-accent/10 rounded-xl lg:rounded-2xl border border-accent/20">
+                  <ShieldAlert className="w-5 h-5 lg:w-6 lg:h-6 text-accent" />
                 </div>
               )}
             </div>
             <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="label-tech">Tipo: {serviceName}</span>
-                <button onClick={renameService} className="text-text-muted hover:text-accent transition-colors"><Pencil className="w-3 h-3" /></button>
+              <div className="flex items-center gap-2 mb-0.5 lg:mb-1">
+                <span className="label-tech text-[8px] lg:text-[10px]">Tipo: {serviceName}</span>
+                <button onClick={renameService} className="text-text-muted hover:text-accent transition-colors"><Pencil className="w-2.5 h-2.5 lg:w-3 h-3" /></button>
               </div>
-              <h1 className="text-3xl font-display font-black text-text-main tracking-tight leading-tight">
-                {activeTab === 'dashboard' ? 'Painel de Controle' : 
-                 activeTab === 'roster' ? 'Escala de Serviço' : 
-                 activeTab === 'personnel' ? 'Quadro de Militares' : 
-                 activeTab === 'status' ? 'Status e Impedimentos' : 'Dias de Mar'}
+              <h1 className="text-xl lg:text-3xl font-display font-black text-text-main tracking-tight leading-tight">
+                {activeTab === 'dashboard' ? 'Painel' : 
+                 activeTab === 'roster' ? 'Escala' : 
+                 activeTab === 'personnel' ? 'Quadro' : 
+                 activeTab === 'status' ? 'Status' : 'Mar'}
               </h1>
             </div>
           </div>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 lg:gap-4 w-full sm:w-auto">
             {violations.length > 0 && (
               <button 
                 onClick={() => setModal({ type: 'ALERT', date: '', rowMilitaryId: 0, message: 'REST_VIOLATIONS' })}
-                className="flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/20 text-red-500 rounded-xl text-xs font-bold animate-pulse hover:bg-red-500/20 transition-colors"
+                className="flex items-center gap-2 px-3 lg:px-4 py-2 bg-red-500/10 border border-red-500/20 text-red-500 rounded-lg lg:rounded-xl text-[10px] lg:text-xs font-bold animate-pulse hover:bg-red-500/20 transition-colors"
                 title="Detectadas folgas menores que 2 dias"
               >
-                <Bell className="w-4 h-4" />
-                <span>{violations.length} Alertas</span>
+                <Bell className="w-3.5 h-3.5 lg:w-4 h-4 text-red-500" />
+                <span className="hidden sm:inline">{violations.length} Alertas</span>
               </button>
             )}
             <button 
               onClick={openDailyExport}
-              className="px-5 py-2.5 bg-white/5 border border-white/10 text-text-main rounded-xl text-xs font-black hover:bg-white/10 transition-all flex items-center gap-2"
+              className="flex-1 sm:flex-none px-3 lg:px-5 py-2 lg:py-2.5 bg-white/5 border border-white/10 text-text-main rounded-lg lg:rounded-xl text-[10px] lg:text-xs font-black hover:bg-white/10 transition-all flex items-center justify-center gap-2"
             >
-              <FileText className="w-4 h-4" />
-              Detalhe Diário (PDF)
+              <FileText className="w-3.5 h-3.5 lg:w-4 h-4" />
+              <span className="hidden sm:inline">PDF Diário</span>
+              <span className="sm:hidden">PDF</span>
             </button>
             <button 
               onClick={exportExcel}
-              className="px-5 py-2.5 bg-accent text-bg-main rounded-xl text-xs font-black hover:brightness-110 transition-all shadow-lg brass-glow"
+              className="flex-1 sm:flex-none px-3 lg:px-5 py-2 lg:py-2.5 bg-accent text-bg-main rounded-lg lg:rounded-xl text-[10px] lg:text-xs font-black hover:brightness-110 transition-all shadow-lg brass-glow flex items-center justify-center"
             >
-              Exportar Escala Excel
+              Excel
             </button>
           </div>
         </header>
@@ -1265,46 +1266,46 @@ export default function App() {
               )}
 
               <div className={cn(
-                "glass-panel p-8 rounded-3xl border border-white/5 shadow-2xl flex flex-wrap items-end gap-8",
+                "glass-panel p-4 lg:p-8 rounded-2xl lg:rounded-3xl border border-white/5 shadow-2xl flex flex-wrap items-end gap-3 lg:gap-8",
                 isFullScreen && "hidden"
               )}>
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2 w-full sm:w-auto">
                   <label className="label-tech">Data de Início</label>
                   <input 
                     type="date" 
                     value={config.startDate}
                     onChange={(e) => setConfig({ ...config, startDate: e.target.value })}
-                    className="bg-bg-main border border-white/10 rounded-xl px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main"
+                    className="bg-bg-main border border-white/10 rounded-xl px-4 lg:px-5 py-2.5 lg:py-3 text-xs lg:text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main"
                   />
                 </div>
-                <div className="flex flex-col gap-2">
-                  <label className="label-tech">Dias de Previsão</label>
+                <div className="flex flex-col gap-2 w-[48%] sm:w-28">
+                  <label className="label-tech">Dias</label>
                   <input 
                     type="number" 
                     min="7" 
                     max="90"
                     value={config.days}
                     onChange={(e) => setConfig({ ...config, days: parseInt(e.target.value) })}
-                    className="bg-bg-main border border-white/10 rounded-xl px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main w-28"
+                    className="w-full bg-bg-main border border-white/10 rounded-xl px-4 lg:px-5 py-2.5 lg:py-3 text-xs lg:text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main"
                   />
                 </div>
-                <div className="flex flex-col gap-2">
-                  <label className="label-tech">Duração Acomp.</label>
+                <div className="flex flex-col gap-2 w-[48%] sm:w-28">
+                  <label className="label-tech">Acomp.</label>
                   <input 
                     type="number" 
                     min="1" 
                     max="10"
                     value={acompDuration}
                     onChange={(e) => setAcompDuration(parseInt(e.target.value))}
-                    className="bg-bg-main border border-white/10 rounded-xl px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main w-28"
+                    className="w-full bg-bg-main border border-white/10 rounded-xl px-4 lg:px-5 py-2.5 lg:py-3 text-xs lg:text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main"
                   />
                 </div>
-                <div className="flex flex-col gap-2">
-                  <label className="label-tech">Modelo de Escala</label>
+                <div className="flex flex-col gap-2 w-full sm:w-auto">
+                  <label className="label-tech">Modelo</label>
                   <select 
                     value={rosterModel}
                     onChange={(e) => setRosterModel(e.target.value as RosterModel)}
-                    className="bg-bg-main border border-white/10 rounded-xl px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main"
+                    className="bg-bg-main border border-white/10 rounded-xl px-4 lg:px-5 py-2.5 lg:py-3 text-xs lg:text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main"
                   >
                     <optgroup label="Escala Corrida">
                       <option value="CORRIDA">Corrida (1/dia)</option>
@@ -1324,47 +1325,47 @@ export default function App() {
                   </select>
                 </div>
 
-                <div className="flex flex-col gap-2">
-                  <label className="label-tech text-accent">Ordem de Precedência (Escala Preta)</label>
+                <div className="flex flex-col gap-2 w-full lg:w-auto">
+                  <label className="label-tech text-accent">Ordem (Preta)</label>
                   <select 
                     value={config.militaryOrder || 'MAIS_MODERNO'}
                     onChange={(e) => setConfig({ ...config, militaryOrder: e.target.value as any })}
-                    className="bg-bg-main border border-accent/20 rounded-xl px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main"
+                    className="bg-bg-main border border-accent/20 rounded-xl px-4 lg:px-5 py-2.5 lg:py-3 text-xs lg:text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main"
                   >
-                    <option value="MAIS_MODERNO">Começar p/ Mais Moderno ➔ Mais Antigo</option>
-                    <option value="MAIS_ANTIGO">Começar p/ Mais Antigo ➔ Mais Moderno</option>
+                    <option value="MAIS_MODERNO">Mais Moderno ➔ Mais Antigo</option>
+                    <option value="MAIS_ANTIGO">Mais Antigo ➔ Mais Moderno</option>
                   </select>
                 </div>
 
                 {rosterModel === 'PRETA_VERMELHA' && (
-                  <div className="flex flex-col gap-2">
-                    <label className="label-tech text-secondary">Ordem de Precedência (Escala Vermelha/Domingo)</label>
+                  <div className="flex flex-col gap-2 w-full lg:w-auto">
+                    <label className="label-tech text-secondary">Ordem (Vermelha)</label>
                     <select 
                       value={config.militaryOrderVermelha || 'MAIS_MODERNO'}
                       onChange={(e) => setConfig({ ...config, militaryOrderVermelha: e.target.value as any })}
-                      className="bg-bg-main border border-secondary/20 rounded-xl px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-secondary/50 text-text-main"
+                      className="bg-bg-main border border-secondary/20 rounded-xl px-4 lg:px-5 py-2.5 lg:py-3 text-xs lg:text-sm focus:outline-none focus:ring-2 focus:ring-secondary/50 text-text-main"
                     >
-                      <option value="MAIS_MODERNO">Começar p/ Mais Moderno ➔ Mais Antigo</option>
-                      <option value="MAIS_ANTIGO">Começar p/ Mais Antigo ➔ Mais Moderno</option>
+                      <option value="MAIS_MODERNO">Mais Moderno ➔ Mais Antigo</option>
+                      <option value="MAIS_ANTIGO">Mais Antigo ➔ Mais Moderno</option>
                     </select>
                   </div>
                 )}
 
                 {rosterModel.startsWith('QUARTOS') && (
-                  <div className="flex flex-col gap-2">
-                    <label className="label-tech text-accent">Ordem de Rotação dos Quartos</label>
+                  <div className="flex flex-col gap-2 w-full lg:w-auto">
+                    <label className="label-tech text-accent">Rotação Quartos</label>
                     <select 
                       value={config.quartoOrder || 'MODERNO_PRIMEIRO'}
                       onChange={(e) => setConfig({ ...config, quartoOrder: e.target.value as any })}
-                      className="bg-bg-main border border-accent/20 rounded-xl px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main"
+                      className="bg-bg-main border border-accent/20 rounded-xl px-4 lg:px-5 py-2.5 lg:py-3 text-xs lg:text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main"
                     >
-                      <option value="MODERNO_PRIMEIRO">Do 4º p/ o 1º (Moderno p/ Antigo)</option>
-                      <option value="ANTIGO_PRIMEIRO">Do 1º p/ o 4º (Antigo p/ Moderno)</option>
+                      <option value="MODERNO_PRIMEIRO">4º p/ 1º (Mod. p/ Ant.)</option>
+                      <option value="ANTIGO_PRIMEIRO">1º p/ 4º (Ant. p/ Mod.)</option>
                     </select>
                   </div>
                 )}
 
-                <div className="flex items-center gap-3 py-2 px-1">
+                <div className="flex items-center gap-3 py-2 px-1 w-full lg:w-auto">
                   <input 
                     type="checkbox"
                     id="skipVermelha"
@@ -1372,24 +1373,24 @@ export default function App() {
                     onChange={(e) => setConfig({ ...config, skipVermelha: e.target.checked })}
                     className="w-5 h-5 rounded border-accent/20 bg-bg-main text-accent focus:ring-accent/50"
                   />
-                  <label htmlFor="skipVermelha" className="text-sm font-medium text-text-main cursor-pointer select-none">
-                    Não escalar em Domingos/Feriados (Rotina de Domingo)
+                  <label htmlFor="skipVermelha" className="text-xs lg:text-sm font-medium text-text-main cursor-pointer select-none">
+                    Ignorar Domingos/Feriados
                   </label>
                 </div>
 
-                <div className="flex gap-3">
+                <div className="flex gap-3 w-full sm:w-auto">
                   <button 
                     onClick={() => setIsFullScreen(true)}
-                    className="px-5 py-3 bg-accent/10 border border-accent/20 text-accent rounded-xl text-xs font-bold hover:bg-accent/20 transition-all flex items-center gap-2"
+                    className="flex-1 sm:flex-none px-4 lg:px-5 py-2.5 lg:py-3 bg-accent/10 border border-accent/20 text-accent rounded-xl text-[10px] lg:text-xs font-bold hover:bg-accent/20 transition-all flex items-center justify-center gap-2 whitespace-nowrap"
                   >
-                    <Maximize2 className="w-4 h-4" />
-                    Maximizar Escala
+                    <Maximize2 className="w-3.5 h-3.5 lg:w-4 h-4" />
+                    Expandir
                   </button>
                   <button 
                     onClick={() => setModal({ type: 'CONFIRM_CLEAR_DATA', date: '', rowMilitaryId: 0 })}
-                    className="px-5 py-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-xs font-bold hover:bg-red-500/20 transition-all font-mono"
+                    className="flex-1 sm:flex-none px-4 lg:px-5 py-2.5 lg:py-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-[10px] lg:text-xs font-bold hover:bg-red-500/20 transition-all font-mono whitespace-nowrap"
                   >
-                    Limpar Tudo
+                    Resetar
                   </button>
                 </div>
               </div>
@@ -1440,12 +1441,12 @@ export default function App() {
       </main>
 
       {/* Mobile Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-border-sleek p-2 flex justify-around lg:hidden z-50">
-        <MobileNavItem active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} icon={<LayoutDashboard className="w-6 h-6" />} />
-        <MobileNavItem active={activeTab === 'roster'} onClick={() => setActiveTab('roster')} icon={<CalendarRange className="w-6 h-6" />} />
-        <MobileNavItem active={activeTab === 'personnel'} onClick={() => setActiveTab('personnel')} icon={<Users className="w-6 h-6" />} />
-        <MobileNavItem active={activeTab === 'status'} onClick={() => setActiveTab('status')} icon={<ShieldAlert className="w-6 h-6" />} />
-        <MobileNavItem active={activeTab === 'ship'} onClick={() => setActiveTab('ship')} icon={<Ship className="w-6 h-6" />} />
+      <nav className="fixed bottom-0 left-0 right-0 bg-[#0B0F1A]/95 backdrop-blur-xl border-t border-white/5 p-2 flex justify-around lg:hidden z-50 safe-area-inset-bottom">
+        <MobileNavItem active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} icon={<LayoutDashboard className="w-5 h-5 lg:w-6 lg:h-6" />} label="Dashboard" />
+        <MobileNavItem active={activeTab === 'roster'} onClick={() => setActiveTab('roster')} icon={<CalendarRange className="w-5 h-5 lg:w-6 lg:h-6" />} label="Escala" />
+        <MobileNavItem active={activeTab === 'personnel'} onClick={() => setActiveTab('personnel')} icon={<Users className="w-5 h-5 lg:w-6 lg:h-6" />} label="Efetivo" />
+        <MobileNavItem active={activeTab === 'status'} onClick={() => setActiveTab('status')} icon={<ShieldAlert className="w-5 h-5 lg:w-6 lg:h-6" />} label="Imped." />
+        <MobileNavItem active={activeTab === 'ship'} onClick={() => setActiveTab('ship')} icon={<Ship className="w-5 h-5 lg:w-6 lg:h-6" />} label="Missão" />
       </nav>
 
       {/* Modals */}
@@ -2113,14 +2114,15 @@ const NavItem = ({ active, onClick, icon, label }: { active: boolean, onClick: (
   </button>
 );
 
-const MobileNavItem = ({ active, onClick, icon }: { active: boolean, onClick: () => void, icon: React.ReactNode }) => (
+const MobileNavItem = ({ active, onClick, icon, label }: { active: boolean, onClick: () => void, icon: React.ReactNode, label: string }) => (
   <button
     onClick={onClick}
     className={cn(
-      "p-4 rounded-2xl transition-all",
-      active ? "text-accent bg-accent/10 shadow-inner" : "text-text-muted"
+      "flex flex-col items-center gap-1 py-2 px-3 rounded-xl transition-all",
+      active ? "text-accent bg-accent/10" : "text-text-muted hover:text-text-main"
     )}
   >
     {icon}
+    <span className="text-[8px] font-black uppercase tracking-widest">{label}</span>
   </button>
 );
