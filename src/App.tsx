@@ -42,6 +42,7 @@ import {
 import { generateRoster, getStatusAtivo, STATUS_IMPEDITIVOS, isMilitaryImpeded, validateRosterRest } from './lib/rosterLogic';
 import { exportDailyDetailPDF, DailyExportData } from './lib/pdfExport';
 import { Dashboard } from './components/Dashboard';
+import { RulesNotebook } from './components/RulesNotebook';
 import { RosterTable } from './components/RosterTable';
 import { PersonnelManager } from './components/PersonnelManager';
 import { StatusManager } from './components/StatusManager';
@@ -1315,16 +1316,19 @@ export default function App() {
         {/* Tab Content */}
         <div className="flex flex-col gap-6">
           {activeTab === 'dashboard' && (
-            <Dashboard 
-              militares={militares} 
-              roster={roster} 
-              statusPeriods={statusPeriods}
-              logos={logos}
-              onLogoUpload={handleLogoUpload}
-              onRemoveLogo={removeLogo}
-              onExportBackup={exportFullData}
-              onImportBackup={importFullData}
-            />
+            <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+              <RulesNotebook model={rosterModel} />
+              <Dashboard 
+                militares={militares} 
+                roster={roster} 
+                statusPeriods={statusPeriods}
+                logos={logos}
+                onLogoUpload={handleLogoUpload}
+                onRemoveLogo={removeLogo}
+                onExportBackup={exportFullData}
+                onImportBackup={importFullData}
+              />
+            </div>
           )}
 
           {activeTab === 'roster' && (
@@ -1354,9 +1358,9 @@ export default function App() {
               )}
 
               <div className={cn(
-                "glass-panel p-4 lg:p-8 rounded-2xl lg:rounded-3xl border border-white/5 shadow-2xl flex flex-wrap items-end gap-3 lg:gap-8",
-                isFullScreen && "hidden"
-              )}>
+                  "glass-panel p-4 lg:p-8 rounded-2xl lg:rounded-3xl border border-white/5 shadow-2xl flex flex-wrap items-end gap-3 lg:gap-8",
+                  isFullScreen && "hidden"
+                )}>
                 <div className="flex flex-col gap-2 w-full sm:w-auto">
                   <label className="label-tech">Data de Início</label>
                   <input 
