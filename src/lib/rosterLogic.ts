@@ -21,7 +21,7 @@ import {
   RestViolation
 } from '../types';
 
-export const STATUS_IMPEDITIVOS: StatusType[] = ['CURSO', 'FERIAS', 'DISPENSA_MEDICA', 'PATERNIDADE', 'LUTO', 'DESTACADO', 'PUNICAO'];
+export const STATUS_IMPEDITIVOS: StatusType[] = ['CURSO', 'FERIAS', 'DISPENSA_MEDICA', 'PATERNIDADE', 'LUTO', 'DESTACADO', 'PUNICAO', 'FOLGA'];
 const SHIFTS = ['08:00 - 12:00', '12:00 - 16:00', '16:00 - 20:00'];
 
 export function getStatusAtivo(militaryId: number, dateStr: string, statusPeriods: StatusPeriod[]): StatusType | null {

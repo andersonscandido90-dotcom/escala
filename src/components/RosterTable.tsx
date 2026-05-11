@@ -66,7 +66,7 @@ export const RosterTable: React.FC<RosterTableProps> = ({
             </tr>
           </thead>
           <tbody>
-            {militares.map((m, idx) => (
+            {[...militares].sort((a, b) => a.antiguidade - b.antiguidade).map((m, idx) => (
               <tr key={m.id} className="group hover:bg-white/5 transition-colors border-b border-white/5 last:border-0">
                 <td className="sticky left-0 z-10 bg-bg-card p-3 lg:p-6 font-bold text-text-main border-r border-white/5 shadow-[10px_0_20px_-10px_rgba(0,0,0,0.5)]">
                   <div className="flex items-center gap-2 lg:gap-4">
@@ -144,6 +144,7 @@ export const RosterTable: React.FC<RosterTableProps> = ({
                                            statusAtivo === 'CURSO' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/20' :
                                            statusAtivo === 'DESTACADO' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20' :
                                            statusAtivo === 'PUNICAO' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/20' :
+                                           statusAtivo === 'FOLGA' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/20' :
                                            'bg-red-500/20 text-red-400 border border-red-500/20';
                     
                     cellClass = cn(cellClass, navalStatusColor, "font-black text-[8px] lg:text-[10px] uppercase tracking-tighter");

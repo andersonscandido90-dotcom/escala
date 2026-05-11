@@ -114,6 +114,7 @@ export const StatusManager: React.FC<StatusManagerProps> = ({
                   p.type === 'CURSO' ? "bg-blue-500/10 text-blue-400 border-blue-500/20" :
                   p.type === 'DESTACADO' ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" :
                   p.type === 'PUNICAO' ? "bg-orange-500/10 text-orange-400 border-orange-500/20" :
+                  p.type === 'FOLGA' ? "bg-cyan-500/10 text-cyan-400 border-cyan-500/20" :
                   "bg-red-500/10 text-red-400 border-red-500/20"
                 )}>
                   {STATUS_LABELS[p.type] || p.type}

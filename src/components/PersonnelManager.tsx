@@ -1,19 +1,21 @@
 import React, { useState } from 'react';
 import { Military } from '../types';
-import { UserPlus, Trash2, Edit2 } from 'lucide-react';
+import { UserPlus, Trash2, Edit2, LayoutGrid } from 'lucide-react';
 
 interface PersonnelManagerProps {
   militares: Military[];
   onAdd: (name: string, posto: string, especialidade: string, quarto: number, antiguidade: number) => void;
   onRemove: (id: number) => void;
   onUpdate: (id: number, name: string, posto: string, especialidade: string, quarto: number, antiguidade: number) => void;
+  onUpdateMultiple: (updatedMilitares: Military[]) => void;
 }
 
 export const PersonnelManager: React.FC<PersonnelManagerProps> = ({ 
   militares, 
   onAdd, 
   onRemove, 
-  onUpdate 
+  onUpdate,
+  onUpdateMultiple
 }) => {
   const [newName, setNewName] = useState('');
   const [newPosto, setNewPosto] = useState('');
@@ -44,6 +46,42 @@ export const PersonnelManager: React.FC<PersonnelManagerProps> = ({
       onUpdate(id, editName.trim(), editPosto.trim(), editEspecialidade.trim(), editQuarto, editAntiguidade);
     }
     setEditingId(null);
+  };
+
+  const handleAutoDistribute = () => {
+    if (militares.length === 0) return;
+    
+    // Sort by seniority (1 is most senior)
+    const sorted = [...militares].sort((a, b) => a.antiguidade - b.antiguidade);
+    const total = sorted.length;
+    const base = Math.floor(total / 4);
+    const remainder = total % 4;
+
+    // Distribution target sizes for each quarto
+    // If we have 18: base=4, rem=2 -> [5, 5, 4, 4]
+    const counts = [base, base, base, base];
+    for (let i = 0; i < remainder; i++) {
+      counts[i]++;
+    }
+
+    const updatedList: Military[] = [];
+    let currentIndex = 0;
+
+    counts.forEach((count, quartoIdx) => {
+      const quartoNum = quartoIdx + 1;
+      for (let i = 0; i < count; i++) {
+        const m = sorted[currentIndex];
+        if (m) {
+          updatedList.push({
+            ...m,
+            quarto: quartoNum
+          });
+        }
+        currentIndex++;
+      }
+    });
+
+    onUpdateMultiple(updatedList);
   };
 
   return (
@@ -115,9 +153,19 @@ export const PersonnelManager: React.FC<PersonnelManagerProps> = ({
       </div>
 
       <div className="glass-panel rounded-2xl lg:rounded-[2rem] border border-white/5 shadow-2xl overflow-hidden">
-        <div className="p-4 lg:p-8 border-b border-white/5 bg-white/5">
-          <div className="label-tech mb-1 text-[8px] lg:text-[10px]">Efetivo</div>
-          <h3 className="text-lg lg:text-xl font-display font-black text-text-main tracking-tight">Militares Cadastrados</h3>
+        <div className="p-4 lg:p-8 border-b border-white/5 bg-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="label-tech mb-1 text-[8px] lg:text-[10px]">Efetivo</div>
+            <h3 className="text-lg lg:text-xl font-display font-black text-text-main tracking-tight">Militares Cadastrados</h3>
+          </div>
+          <button
+            onClick={handleAutoDistribute}
+            className="px-4 py-2 bg-white/5 border border-white/10 hover:bg-accent hover:text-bg-main text-accent rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 group"
+            title="Distribuir militares nos quartos automaticamente por antiguidade"
+          >
+            <LayoutGrid className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+            Distribuir Quartos
+          </button>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-xs lg:text-sm font-mono">
@@ -128,11 +176,12 @@ export const PersonnelManager: React.FC<PersonnelManagerProps> = ({
                 <th className="p-4 lg:p-6 text-left label-tech w-20 lg:w-28 text-[7px] lg:text-[9px]">Espec.</th>
                 <th className="p-4 lg:p-6 text-left label-tech text-[7px] lg:text-[9px]">Militar</th>
                 <th className="p-4 lg:p-6 text-left label-tech text-[7px] lg:text-[9px]">Quarto</th>
+                <th className="p-4 lg:p-6 text-center label-tech text-[7px] lg:text-[9px]">Anig.</th>
                 <th className="p-4 lg:p-6 text-right label-tech text-[7px] lg:text-[9px]">Ações</th>
               </tr>
             </thead>
             <tbody>
-              {militares.map((m, idx) => (
+              {[...militares].sort((a, b) => a.antiguidade - b.antiguidade).map((m, idx) => (
                 <tr key={m.id} className="group hover:bg-white/5 transition-colors border-b border-white/5 last:border-0">
                   <td className="p-4 lg:p-6 text-text-muted font-bold text-[10px] lg:text-xs">{String(idx + 1).padStart(2, '0')}</td>
                   <td className="p-4 lg:p-6 font-bold text-accent">
@@ -192,6 +241,18 @@ export const PersonnelManager: React.FC<PersonnelManagerProps> = ({
                       <span className="px-2 py-0.5 bg-white/5 rounded-lg border border-white/5 text-accent font-bold text-[10px] lg:text-xs">
                         {m.quarto || 1}º Q
                       </span>
+                    )}
+                  </td>
+                  <td className="p-4 lg:p-6 text-center">
+                    {editingId === m.id ? (
+                      <input
+                        type="number"
+                        value={editAntiguidade}
+                        onChange={(e) => setEditAntiguidade(Number(e.target.value))}
+                        className="bg-bg-main border border-accent/30 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-accent text-text-main w-16"
+                      />
+                    ) : (
+                      <span className="text-text-muted font-bold">{m.antiguidade}</span>
                     )}
                   </td>
                   <td className="p-4 lg:p-6 text-right">

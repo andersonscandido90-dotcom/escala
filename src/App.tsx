@@ -907,6 +907,10 @@ export default function App() {
     setMilitares(militares.map(m => m.id === id ? { ...m, name, posto, especialidade, quarto, antiguidade } : m));
   };
 
+  const handleUpdateMultipleMilitars = (updatedMilitares: Military[]) => {
+    setMilitares(updatedMilitares);
+  };
+
   const handleAddStatus = (period: Omit<StatusPeriod, 'id'>) => {
     setStatusPeriods([...statusPeriods, { ...period, id: nextIds.status }]);
     setNextIds({ ...nextIds, status: nextIds.status + 1 });
@@ -1501,7 +1505,8 @@ export default function App() {
               militares={militares} 
               onAdd={handleAddMilitary} 
               onRemove={handleRemoveMilitary} 
-              onUpdate={handleUpdateMilitary} 
+              onUpdate={handleUpdateMilitary}
+              onUpdateMultiple={handleUpdateMultipleMilitars}
             />
           )}
 
