@@ -24,7 +24,8 @@ import {
   Minimize2,
   FileText,
   Bell,
-  X
+  X,
+  HelpCircle
 } from 'lucide-react';
 import { format, addDays, parseISO, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -47,6 +48,7 @@ import { RosterTable } from './components/RosterTable';
 import { PersonnelManager } from './components/PersonnelManager';
 import { StatusManager } from './components/StatusManager';
 import { ShipManager } from './components/ShipManager';
+import { UserManual } from './components/UserManual';
 import { cn } from './lib/utils';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
@@ -55,7 +57,7 @@ import 'jspdf-autotable';
 const STORAGE_KEY = 'escala_pro_data';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'roster' | 'personnel' | 'status' | 'ship'>('roster');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'roster' | 'personnel' | 'status' | 'ship' | 'help'>('roster');
   
   // Multi-service State
   const [services, setServices] = useState<RosterService[]>([]);
@@ -1179,6 +1181,12 @@ export default function App() {
               icon={<Ship className="w-4 h-4" />} 
               label="Dias de Mar" 
             />
+            <NavItem 
+              active={activeTab === 'help'} 
+              onClick={() => setActiveTab('help')} 
+              icon={<HelpCircle className="w-4 h-4" />} 
+              label="Ajuda e Manual" 
+            />
           </ul>
         </nav>
 
@@ -1249,7 +1257,8 @@ export default function App() {
                   {activeTab === 'dashboard' ? 'Painel' : 
                    activeTab === 'roster' ? 'Escala' : 
                    activeTab === 'personnel' ? 'Quadro' : 
-                   activeTab === 'status' ? 'Status' : 'Mar'}
+                   activeTab === 'status' ? 'Status' : 
+                   activeTab === 'help' ? 'Ajuda' : 'Mar'}
                 </h1>
               </div>
             </div>
@@ -1530,6 +1539,10 @@ export default function App() {
               onRemove={handleRemoveShip} 
             />
           )}
+
+          {activeTab === 'help' && (
+            <UserManual />
+          )}
         </div>
       </main>
 
@@ -1539,7 +1552,7 @@ export default function App() {
         <MobileNavItem active={activeTab === 'roster'} onClick={() => setActiveTab('roster')} icon={<CalendarRange className="w-5 h-5 lg:w-6 lg:h-6" />} label="Escala" />
         <MobileNavItem active={activeTab === 'personnel'} onClick={() => setActiveTab('personnel')} icon={<Users className="w-5 h-5 lg:w-6 lg:h-6" />} label="Efetivo" />
         <MobileNavItem active={activeTab === 'status'} onClick={() => setActiveTab('status')} icon={<ShieldAlert className="w-5 h-5 lg:w-6 lg:h-6" />} label="Imped." />
-        <MobileNavItem active={activeTab === 'ship'} onClick={() => setActiveTab('ship')} icon={<Ship className="w-5 h-5 lg:w-6 lg:h-6" />} label="Missão" />
+        <MobileNavItem active={activeTab === 'help'} onClick={() => setActiveTab('help')} icon={<HelpCircle className="w-5 h-5 lg:w-6 lg:h-6" />} label="Ajuda" />
       </nav>
 
       {/* Modals */}
