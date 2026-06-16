@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Military } from '../types';
-import { UserPlus, Trash2, Edit2, LayoutGrid } from 'lucide-react';
+import { UserPlus, Trash2, Edit2, LayoutGrid, Lock } from 'lucide-react';
 
 interface PersonnelManagerProps {
   militares: Military[];
+  isReadOnly?: boolean;
   onAdd: (name: string, posto: string, especialidade: string, quarto: number, antiguidade: number) => void;
   onRemove: (id: number) => void;
   onUpdate: (id: number, name: string, posto: string, especialidade: string, quarto: number, antiguidade: number) => void;
@@ -12,6 +13,7 @@ interface PersonnelManagerProps {
 
 export const PersonnelManager: React.FC<PersonnelManagerProps> = ({ 
   militares, 
+  isReadOnly = false,
   onAdd, 
   onRemove, 
   onUpdate,
@@ -31,6 +33,7 @@ export const PersonnelManager: React.FC<PersonnelManagerProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isReadOnly) return;
     if (newName.trim()) {
       onAdd(newName.trim(), newPosto.trim(), newEspecialidade.trim(), newQuarto, newAntiguidade);
       setNewName('');
@@ -42,6 +45,7 @@ export const PersonnelManager: React.FC<PersonnelManagerProps> = ({
   };
 
   const handleUpdate = (id: number) => {
+    if (isReadOnly) return;
     if (editName.trim()) {
       onUpdate(id, editName.trim(), editPosto.trim(), editEspecialidade.trim(), editQuarto, editAntiguidade);
     }
@@ -49,7 +53,7 @@ export const PersonnelManager: React.FC<PersonnelManagerProps> = ({
   };
 
   const handleAutoDistribute = () => {
-    if (militares.length === 0) return;
+    if (isReadOnly || militares.length === 0) return;
     
     // Sort by seniority (1 is most senior)
     const sorted = [...militares].sort((a, b) => a.antiguidade - b.antiguidade);
@@ -88,67 +92,73 @@ export const PersonnelManager: React.FC<PersonnelManagerProps> = ({
     <div className="flex flex-col gap-6 lg:gap-8">
       <div className="glass-panel p-4 lg:p-8 rounded-2xl lg:rounded-[2rem] border border-white/5 shadow-2xl">
         <div className="label-tech mb-1 text-[8px] lg:text-[10px]">Cadastro de Militares</div>
-        <h3 className="text-lg lg:text-xl font-display font-black text-text-main tracking-tight mb-4 lg:mb-6">Novo Militar</h3>
+        <h3 className="text-lg lg:text-xl font-display font-black text-text-main tracking-tight mb-4 lg:mb-6 flex justify-between items-center">
+          <span>Novo Militar</span>
+          {isReadOnly && <span className="text-xs text-red-400 font-mono font-bold uppercase tracking-widest bg-red-400/10 px-2 py-1 rounded">Acesso Bloqueado</span>}
+        </h3>
         <form onSubmit={handleSubmit} className="flex flex-wrap gap-3 lg:gap-4 items-end">
-          <div className="w-full sm:w-28 flex flex-col gap-1 lg:gap-2">
-            <label className="label-tech text-[8px] lg:text-[10px]">Graduação</label>
-            <input
-              type="text"
-              value={newPosto}
-              onChange={(e) => setNewPosto(e.target.value.toUpperCase())}
-              placeholder="Ex: CB"
-              className="w-full bg-bg-main border border-white/10 rounded-xl px-4 lg:px-5 py-2.5 lg:py-3 text-xs lg:text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main"
-            />
-          </div>
-          <div className="w-full sm:w-28 flex flex-col gap-1 lg:gap-2">
-            <label className="label-tech text-[8px] lg:text-[10px]">Espec.</label>
-            <input
-              type="text"
-              value={newEspecialidade}
-              onChange={(e) => setNewEspecialidade(e.target.value.toUpperCase())}
-              placeholder="Ex: MO"
-              className="w-full bg-bg-main border border-white/10 rounded-xl px-4 lg:px-5 py-2.5 lg:py-3 text-xs lg:text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main"
-            />
-          </div>
-          <div className="flex-1 min-w-[180px] flex flex-col gap-1 lg:gap-2">
-            <label className="label-tech text-[8px] lg:text-[10px]">Nome de Guerra</label>
-            <input
-              type="text"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              placeholder="Nome do Militar"
-              className="w-full bg-bg-main border border-white/10 rounded-xl px-4 lg:px-5 py-2.5 lg:py-3 text-xs lg:text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main"
-            />
-          </div>
-          <div className="w-[48%] sm:w-32 flex flex-col gap-1 lg:gap-2">
-            <label className="label-tech text-[8px] lg:text-[10px]">Quarto</label>
-            <select
-              value={newQuarto}
-              onChange={(e) => setNewQuarto(Number(e.target.value))}
-              className="w-full bg-bg-main border border-white/10 rounded-xl px-4 lg:px-5 py-2.5 lg:py-3 text-xs lg:text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main"
+          <fieldset disabled={isReadOnly} className="w-full flex flex-wrap gap-3 lg:gap-4 items-end">
+            <div className="w-full sm:w-28 flex flex-col gap-1 lg:gap-2">
+              <label className="label-tech text-[8px] lg:text-[10px]">Graduação</label>
+              <input
+                type="text"
+                value={newPosto}
+                onChange={(e) => setNewPosto(e.target.value.toUpperCase())}
+                placeholder="Ex: CB"
+                className="w-full bg-bg-main border border-white/10 rounded-xl px-4 lg:px-5 py-2.5 lg:py-3 text-xs lg:text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main disabled:opacity-50"
+              />
+            </div>
+            <div className="w-full sm:w-28 flex flex-col gap-1 lg:gap-2">
+              <label className="label-tech text-[8px] lg:text-[10px]">Espec.</label>
+              <input
+                type="text"
+                value={newEspecialidade}
+                onChange={(e) => setNewEspecialidade(e.target.value.toUpperCase())}
+                placeholder="Ex: MO"
+                className="w-full bg-bg-main border border-white/10 rounded-xl px-4 lg:px-5 py-2.5 lg:py-3 text-xs lg:text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main disabled:opacity-50"
+              />
+            </div>
+            <div className="flex-1 min-w-[180px] flex flex-col gap-1 lg:gap-2">
+              <label className="label-tech text-[8px] lg:text-[10px]">Nome de Guerra</label>
+              <input
+                type="text"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="Nome do Militar"
+                className="w-full bg-bg-main border border-white/10 rounded-xl px-4 lg:px-5 py-2.5 lg:py-3 text-xs lg:text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main disabled:opacity-50"
+              />
+            </div>
+            <div className="w-[48%] sm:w-32 flex flex-col gap-1 lg:gap-2">
+              <label className="label-tech text-[8px] lg:text-[10px]">Quarto</label>
+              <select
+                value={newQuarto}
+                onChange={(e) => setNewQuarto(Number(e.target.value))}
+                className="w-full bg-bg-main border border-white/10 rounded-xl px-4 lg:px-5 py-2.5 lg:py-3 text-xs lg:text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main disabled:opacity-50"
+              >
+                <option value={1}>1º Quarto</option>
+                <option value={2}>2º Quarto</option>
+                <option value={3}>3º Quarto</option>
+                <option value={4}>4º Quarto</option>
+              </select>
+            </div>
+            <div className="w-[48%] sm:w-24 flex flex-col gap-1 lg:gap-2">
+              <label className="label-tech text-[8px] lg:text-[10px]">Antig.</label>
+              <input
+                type="number"
+                value={newAntiguidade}
+                onChange={(e) => setNewAntiguidade(Number(e.target.value))}
+                className="w-full bg-bg-main border border-white/10 rounded-xl px-4 lg:px-5 py-2.5 lg:py-3 text-xs lg:text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main disabled:opacity-50"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={isReadOnly}
+              className="w-full sm:w-auto px-6 py-2.5 lg:py-3 bg-accent text-bg-main disabled:bg-white/5 disabled:text-text-muted disabled:border disabled:border-white/5 disabled:shadow-none rounded-xl text-xs lg:text-sm font-black hover:brightness-110 transition-all shadow-lg brass-glow flex items-center justify-center gap-2 h-[42px] lg:h-[46px] disabled:pointer-events-none"
             >
-              <option value={1}>1º Quarto</option>
-              <option value={2}>2º Quarto</option>
-              <option value={3}>3º Quarto</option>
-              <option value={4}>4º Quarto</option>
-            </select>
-          </div>
-          <div className="w-[48%] sm:w-24 flex flex-col gap-1 lg:gap-2">
-            <label className="label-tech text-[8px] lg:text-[10px]">Antig.</label>
-            <input
-              type="number"
-              value={newAntiguidade}
-              onChange={(e) => setNewAntiguidade(Number(e.target.value))}
-              className="w-full bg-bg-main border border-white/10 rounded-xl px-4 lg:px-5 py-2.5 lg:py-3 text-xs lg:text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main"
-            />
-          </div>
-          <button
-            type="submit"
-            className="w-full sm:w-auto px-6 py-2.5 lg:py-3 bg-accent text-bg-main rounded-xl text-xs lg:text-sm font-black hover:brightness-110 transition-all shadow-lg brass-glow flex items-center justify-center gap-2 h-[42px] lg:h-[46px]"
-          >
-            <UserPlus className="w-4 h-4" />
-            Cadastrar
-          </button>
+              <UserPlus className="w-4 h-4" />
+              {isReadOnly ? "Bloqueado" : "Cadastrar"}
+            </button>
+          </fieldset>
         </form>
       </div>
 
@@ -160,7 +170,8 @@ export const PersonnelManager: React.FC<PersonnelManagerProps> = ({
           </div>
           <button
             onClick={handleAutoDistribute}
-            className="px-4 py-2 bg-white/5 border border-white/10 hover:bg-accent hover:text-bg-main text-accent rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 group"
+            disabled={isReadOnly}
+            className="px-4 py-2 bg-white/5 border border-white/10 hover:bg-accent hover:text-bg-main text-accent rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 group disabled:opacity-30 disabled:pointer-events-none"
             title="Distribuir militares nos quartos automaticamente por antiguidade"
           >
             <LayoutGrid className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
@@ -257,7 +268,11 @@ export const PersonnelManager: React.FC<PersonnelManagerProps> = ({
                   </td>
                   <td className="p-4 lg:p-6 text-right">
                     <div className="flex justify-end gap-1.5 lg:gap-2">
-                      {editingId === m.id ? (
+                      {isReadOnly ? (
+                        <div className="text-text-muted/40 p-2 border border-white/5 bg-white/[0.01] rounded-lg" title="Operações bloqueadas para consulta">
+                          <Lock className="w-3.5 h-3.5" />
+                        </div>
+                      ) : editingId === m.id ? (
                         <div className="flex gap-1">
                           <button
                             onClick={() => handleUpdate(m.id)}

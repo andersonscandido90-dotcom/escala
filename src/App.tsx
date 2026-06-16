@@ -25,7 +25,9 @@ import {
   FileText,
   Bell,
   X,
-  HelpCircle
+  HelpCircle,
+  Lock,
+  Unlock
 } from 'lucide-react';
 import { format, addDays, parseISO, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -94,6 +96,8 @@ export default function App() {
     navy: '', // base64
     ship: ''  // base64
   });
+  const [isReadOnly, setIsReadOnly] = useState(true);
+  const [passwordInput, setPasswordInput] = useState('');
 
   // Manage body scroll in full screen
   useEffect(() => {
@@ -107,7 +111,7 @@ export default function App() {
 
   // Modal State
   const [modal, setModal] = useState<{
-    type: 'CHOICE' | 'SELECT_NEW' | 'CONFIRM_ASSIGN' | 'ALERT' | 'SELECT_TITULAR_TO_REPLACE' | 'SELECT_SHIFT_SWAP' | 'SELECT_SPECIFIC_SHIFT' | 'MANAGE_SERVICES' | 'CONFIRM_DELETE_SERVICE' | 'CONFIRM_CLEAR_DATA' | 'DAILY_EXPORT';
+    type: 'CHOICE' | 'SELECT_NEW' | 'CONFIRM_ASSIGN' | 'ALERT' | 'SELECT_TITULAR_TO_REPLACE' | 'SELECT_SHIFT_SWAP' | 'SELECT_SPECIFIC_SHIFT' | 'MANAGE_SERVICES' | 'CONFIRM_DELETE_SERVICE' | 'CONFIRM_CLEAR_DATA' | 'DAILY_EXPORT' | 'CCM_UNLOCK';
     date: string;
     rowMilitaryId: number;
     oldId?: number;
@@ -283,6 +287,10 @@ export default function App() {
   };
 
   const createNewService = () => {
+    if (isReadOnly) {
+      setModal({ type: 'ALERT', date: '', rowMilitaryId: 0, message: 'Operação Bloqueada: O terminal está em MODO DE APENAS CONSULTA. Para realizar alterações, informe a credencial de segurança.' });
+      return;
+    }
     setNewServiceName("");
     setModal({ type: 'MANAGE_SERVICES', date: '', rowMilitaryId: 0, message: 'CREATE' });
   };
@@ -709,8 +717,13 @@ export default function App() {
     URL.revokeObjectURL(url);
   };
 
-  const importFullData = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const importFullData = (e: React.ChangeEvent<HTMLInputElement> | File) => {
+    let file: File | undefined;
+    if (e instanceof File) {
+      file = e;
+    } else {
+      file = e.target.files?.[0];
+    }
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -728,15 +741,16 @@ export default function App() {
           if (data.signatureData) setSignatureData(data.signatureData);
           if (data.exportMappings) setExportMappings(data.exportMappings);
           if (data.logos) setLogos(data.logos);
-          setModal({ type: 'ALERT', date: '', rowMilitaryId: 0, message: "Dados importados com sucesso!" });
+          setModal({ type: 'ALERT', date: '', rowMilitaryId: 0, message: `Dados importados com sucesso a partir de "${file.name}"!` });
         }
       } catch (err) {
         setModal({ type: 'ALERT', date: '', rowMilitaryId: 0, message: "Erro ao importar arquivo. Certifique-se de que é um JSON válido." });
       }
     };
     reader.readAsText(file);
-    // Reset input
-    e.target.value = '';
+    if (!(e instanceof File)) {
+      e.target.value = '';
+    }
   };
 
   const handleLogoUpload = (type: 'navy' | 'ship', e: React.ChangeEvent<HTMLInputElement>) => {
@@ -774,6 +788,10 @@ export default function App() {
 
   const deleteService = (id: number, e: React.MouseEvent) => {
     e.stopPropagation();
+    if (isReadOnly) {
+      setModal({ type: 'ALERT', date: '', rowMilitaryId: 0, message: 'Operação Bloqueada: O terminal está em MODO DE APENAS CONSULTA. Para realizar alterações, informe a credencial de segurança.' });
+      return;
+    }
     if (services.length <= 1) {
       setModal({ type: 'ALERT', date: '', rowMilitaryId: 0, message: "Você deve ter pelo menos um tipo de serviço." });
       return;
@@ -794,6 +812,10 @@ export default function App() {
   };
 
   const renameService = () => {
+    if (isReadOnly) {
+      setModal({ type: 'ALERT', date: '', rowMilitaryId: 0, message: 'Operação Bloqueada: O terminal está em MODO DE APENAS CONSULTA. Para realizar alterações, informe a credencial de segurança.' });
+      return;
+    }
     setNewServiceName(serviceName);
     setModal({ type: 'MANAGE_SERVICES', date: '', rowMilitaryId: 0, message: 'RENAME' });
   };
@@ -1264,6 +1286,25 @@ export default function App() {
             </div>
             
             <div className="flex items-center gap-2 lg:gap-4 w-full sm:w-auto">
+              <button 
+                onClick={() => {
+                  if (isReadOnly) {
+                    setModal({ type: 'CCM_UNLOCK', date: '', rowMilitaryId: 0 });
+                  } else {
+                    setIsReadOnly(true);
+                  }
+                }}
+                className={cn(
+                  "flex-1 sm:flex-none px-3 lg:px-5 py-2 lg:py-2.5 rounded-lg lg:rounded-xl text-[10px] lg:text-xs font-black transition-all flex items-center justify-center gap-2 border uppercase font-mono",
+                  isReadOnly 
+                    ? "bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20" 
+                    : "bg-green-500/10 border-green-500/20 text-green-400 hover:bg-green-500/20 shadow-[0_0_15px_rgba(34,197,94,0.1)]"
+                )}
+                title={isReadOnly ? "Bloqueado para alterações. Clique para liberar." : "Desbloqueado para alterações. Clique para travar novamente."}
+              >
+                {isReadOnly ? <Lock className="w-3.5 h-3.5 lg:w-4 h-4 text-red-400 shrink-0" /> : <Unlock className="w-3.5 h-3.5 lg:w-4 h-4 text-green-400 shrink-0" />}
+                <span>{isReadOnly ? "Acesso Bloqueado" : "Acesso Liberado"}</span>
+              </button>
               {violations.length > 0 && (
                 <button 
                   onClick={() => setModal({ type: 'ALERT', date: '', rowMilitaryId: 0, message: 'REST_VIOLATIONS' })}
@@ -1332,6 +1373,7 @@ export default function App() {
                 roster={roster} 
                 statusPeriods={statusPeriods}
                 logos={logos}
+                isReadOnly={isReadOnly}
                 onLogoUpload={handleLogoUpload}
                 onRemoveLogo={removeLogo}
                 onExportBackup={exportFullData}
@@ -1376,7 +1418,8 @@ export default function App() {
                     type="date" 
                     value={config.startDate}
                     onChange={(e) => setConfig({ ...config, startDate: e.target.value })}
-                    className="bg-bg-main border border-white/10 rounded-xl px-4 lg:px-5 py-2.5 lg:py-3 text-xs lg:text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main"
+                    disabled={isReadOnly}
+                    className="bg-bg-main border border-white/10 rounded-xl px-4 lg:px-5 py-2.5 lg:py-3 text-xs lg:text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main disabled:opacity-50"
                   />
                 </div>
                 <div className="flex flex-col gap-2 w-[48%] sm:w-28">
@@ -1387,7 +1430,8 @@ export default function App() {
                     max="90"
                     value={config.days}
                     onChange={(e) => setConfig({ ...config, days: parseInt(e.target.value) })}
-                    className="w-full bg-bg-main border border-white/10 rounded-xl px-4 lg:px-5 py-2.5 lg:py-3 text-xs lg:text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main"
+                    disabled={isReadOnly}
+                    className="w-full bg-bg-main border border-white/10 rounded-xl px-4 lg:px-5 py-2.5 lg:py-3 text-xs lg:text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main disabled:opacity-50"
                   />
                 </div>
                 <div className="flex flex-col gap-2 w-[48%] sm:w-28">
@@ -1398,7 +1442,8 @@ export default function App() {
                     max="10"
                     value={acompDuration}
                     onChange={(e) => setAcompDuration(parseInt(e.target.value))}
-                    className="w-full bg-bg-main border border-white/10 rounded-xl px-4 lg:px-5 py-2.5 lg:py-3 text-xs lg:text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main"
+                    disabled={isReadOnly}
+                    className="w-full bg-bg-main border border-white/10 rounded-xl px-4 lg:px-5 py-2.5 lg:py-3 text-xs lg:text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main disabled:opacity-50"
                   />
                 </div>
                 <div className="flex flex-col gap-2 w-full sm:w-auto">
@@ -1406,7 +1451,8 @@ export default function App() {
                   <select 
                     value={rosterModel}
                     onChange={(e) => setRosterModel(e.target.value as RosterModel)}
-                    className="bg-bg-main border border-white/10 rounded-xl px-4 lg:px-5 py-2.5 lg:py-3 text-xs lg:text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main"
+                    disabled={isReadOnly}
+                    className="bg-bg-main border border-white/10 rounded-xl px-4 lg:px-5 py-2.5 lg:py-3 text-xs lg:text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main disabled:opacity-50"
                   >
                     <optgroup label="Escala Corrida">
                       <option value="CORRIDA">Corrida (1/dia)</option>
@@ -1431,7 +1477,8 @@ export default function App() {
                   <select 
                     value={config.militaryOrder || 'MAIS_MODERNO'}
                     onChange={(e) => setConfig({ ...config, militaryOrder: e.target.value as any })}
-                    className="bg-bg-main border border-accent/20 rounded-xl px-4 lg:px-5 py-2.5 lg:py-3 text-xs lg:text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main"
+                    disabled={isReadOnly}
+                    className="bg-bg-main border border-accent/20 rounded-xl px-4 lg:px-5 py-2.5 lg:py-3 text-xs lg:text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main disabled:opacity-50"
                   >
                     <option value="MAIS_MODERNO">Mais Moderno ➔ Mais Antigo</option>
                     <option value="MAIS_ANTIGO">Mais Antigo ➔ Mais Moderno</option>
@@ -1444,7 +1491,8 @@ export default function App() {
                     <select 
                       value={config.militaryOrderVermelha || 'MAIS_MODERNO'}
                       onChange={(e) => setConfig({ ...config, militaryOrderVermelha: e.target.value as any })}
-                      className="bg-bg-main border border-secondary/20 rounded-xl px-4 lg:px-5 py-2.5 lg:py-3 text-xs lg:text-sm focus:outline-none focus:ring-2 focus:ring-secondary/50 text-text-main"
+                      disabled={isReadOnly}
+                      className="bg-bg-main border border-secondary/20 rounded-xl px-4 lg:px-5 py-2.5 lg:py-3 text-xs lg:text-sm focus:outline-none focus:ring-2 focus:ring-secondary/50 text-text-main disabled:opacity-50"
                     >
                       <option value="MAIS_MODERNO">Mais Moderno ➔ Mais Antigo</option>
                       <option value="MAIS_ANTIGO">Mais Antigo ➔ Mais Moderno</option>
@@ -1458,7 +1506,8 @@ export default function App() {
                     <select 
                       value={config.quartoOrder || 'MODERNO_PRIMEIRO'}
                       onChange={(e) => setConfig({ ...config, quartoOrder: e.target.value as any })}
-                      className="bg-bg-main border border-accent/20 rounded-xl px-4 lg:px-5 py-2.5 lg:py-3 text-xs lg:text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main"
+                      disabled={isReadOnly}
+                      className="bg-bg-main border border-accent/20 rounded-xl px-4 lg:px-5 py-2.5 lg:py-3 text-xs lg:text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main disabled:opacity-50"
                     >
                       <option value="MODERNO_PRIMEIRO">4º p/ 1º (Mod. p/ Ant.)</option>
                       <option value="ANTIGO_PRIMEIRO">1º p/ 4º (Ant. p/ Mod.)</option>
@@ -1472,9 +1521,10 @@ export default function App() {
                     id="skipVermelha"
                     checked={config.skipVermelha || false}
                     onChange={(e) => setConfig({ ...config, skipVermelha: e.target.checked })}
-                    className="w-5 h-5 rounded border-accent/20 bg-bg-main text-accent focus:ring-accent/50"
+                    disabled={isReadOnly}
+                    className="w-5 h-5 rounded border-accent/20 bg-bg-main text-accent focus:ring-accent/50 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
                   />
-                  <label htmlFor="skipVermelha" className="text-xs lg:text-sm font-medium text-text-main cursor-pointer select-none">
+                  <label htmlFor="skipVermelha" className="text-xs lg:text-sm font-medium text-text-main cursor-pointer select-none disabled:opacity-50">
                     Ignorar Domingos/Feriados
                   </label>
                 </div>
@@ -1488,8 +1538,20 @@ export default function App() {
                     Expandir
                   </button>
                   <button 
-                    onClick={() => setModal({ type: 'CONFIRM_CLEAR_DATA', date: '', rowMilitaryId: 0 })}
-                    className="flex-1 sm:flex-none px-4 lg:px-5 py-2.5 lg:py-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-[10px] lg:text-xs font-bold hover:bg-red-500/20 transition-all font-mono whitespace-nowrap"
+                    onClick={() => {
+                      if (isReadOnly) {
+                        setModal({ type: 'ALERT', date: '', rowMilitaryId: 0, message: 'Operação Bloqueada: O terminal está em MODO DE APENAS CONSULTA. Para realizar alterações, informe a credencial de segurança.' });
+                      } else {
+                        setModal({ type: 'CONFIRM_CLEAR_DATA', date: '', rowMilitaryId: 0 });
+                      }
+                    }}
+                    className={cn(
+                      "flex-1 sm:flex-none px-4 lg:px-5 py-2.5 lg:py-3 border rounded-xl text-[10px] lg:text-xs font-bold transition-all font-mono whitespace-nowrap",
+                      isReadOnly 
+                        ? "bg-red-500/5 border-red-500/10 text-red-500/30 cursor-not-allowed" 
+                        : "bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20"
+                    )}
+                    disabled={isReadOnly}
                   >
                     Resetar
                   </button>
@@ -1506,6 +1568,7 @@ export default function App() {
                   statusPeriods={statusPeriods}
                   holidayDates={holidayDates}
                   violations={violations}
+                  isReadOnly={isReadOnly}
                   onCellClick={handleCellClick}
                   onHeaderClick={toggleHoliday}
                 />
@@ -1516,6 +1579,7 @@ export default function App() {
           {activeTab === 'personnel' && (
             <PersonnelManager 
               militares={militares} 
+              isReadOnly={isReadOnly}
               onAdd={handleAddMilitary} 
               onRemove={handleRemoveMilitary} 
               onUpdate={handleUpdateMilitary}
@@ -1527,6 +1591,7 @@ export default function App() {
             <StatusManager 
               militares={militares} 
               statusPeriods={statusPeriods} 
+              isReadOnly={isReadOnly}
               onAdd={handleAddStatus} 
               onRemove={handleRemoveStatus} 
             />
@@ -1535,6 +1600,7 @@ export default function App() {
           {activeTab === 'ship' && (
             <ShipManager 
               shipPeriods={shipPeriods} 
+              isReadOnly={isReadOnly}
               onAdd={handleAddShip} 
               onRemove={handleRemoveShip} 
             />
@@ -1564,7 +1630,8 @@ export default function App() {
           modal?.type === 'SELECT_NEW' ? 'Selecionar Militar' :
           modal?.type === 'SELECT_TITULAR_TO_REPLACE' ? 'Turnos do Dia' :
           modal?.type === 'SELECT_SHIFT_SWAP' ? 'Trocar Horário' :
-          modal?.type === 'CONFIRM_ASSIGN' ? 'Confirmar Atribuição' : 'Aviso'
+          modal?.type === 'CONFIRM_ASSIGN' ? 'Confirmar Atribuição' : 
+          modal?.type === 'CCM_UNLOCK' ? 'Desbloquear Acesso' : 'Aviso'
         }
       >
         {modal?.type === 'CHOICE' && (
@@ -2197,6 +2264,70 @@ export default function App() {
               FECHAR MÓDULO
             </button>
           </div>
+        )}
+
+        {modal?.type === 'CCM_UNLOCK' && (
+          <form 
+            onSubmit={(e) => {
+              e.preventDefault();
+              const pwd = passwordInput.trim();
+              if (pwd === '12023051') {
+                setIsReadOnly(false);
+                setPasswordInput('');
+                setModal(null);
+              } else {
+                setPasswordInput('');
+                setModal({ type: 'ALERT', date: '', rowMilitaryId: 0, message: 'Senha incorreta! Apenas operadores credenciados possuem autorização de escrita.' });
+              }
+            }}
+            className="flex flex-col gap-6 py-4"
+          >
+            <div className="flex flex-col items-center gap-4 text-center">
+              <div className="p-4 bg-accent/10 rounded-full border border-accent/20">
+                <Lock className="w-12 h-12 text-accent" />
+              </div>
+              <div>
+                <p className="text-sm text-text-muted mt-2 leading-relaxed font-mono font-black uppercase text-accent">
+                  Controle de Acesso de Dados
+                </p>
+                <p className="text-xs text-text-muted mt-3 leading-relaxed font-mono font-bold text-center">
+                  Este terminal está operando em MODO DE APENAS CONSULTA na rede interna do navio.
+                  Para salvar ou alterar dados de militares ou comissões, informe a credencial de segurança, caso não saiba entre em contato com o SG Candido.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="label-tech text-[10px] text-center">Credencial de Segurança</label>
+              <input 
+                type="password"
+                autoFocus
+                placeholder="Digite a senha..."
+                value={passwordInput}
+                onChange={(e) => setPasswordInput(e.target.value)}
+                className="w-full bg-bg-main border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main text-center font-mono font-bold tracking-widest"
+              />
+            </div>
+
+            <div className="flex gap-3 mt-2">
+              <button 
+                type="button"
+                onClick={() => {
+                  setPasswordInput('');
+                  setModal(null);
+                }}
+                className="flex-1 px-5 py-3 border border-white/10 text-text-main rounded-xl text-xs font-black font-mono hover:bg-white/5 transition-all uppercase"
+              >
+                Cancelar
+              </button>
+              <button 
+                type="submit"
+                className="flex-1 px-5 py-3 bg-accent text-bg-main rounded-xl text-xs font-black hover:brightness-110 transition-all font-mono uppercase brass-glow"
+              >
+                Confirmar
+              </button>
+            </div>
+          </form>
         )}
       </Modal>
     </div>

@@ -12,6 +12,7 @@ interface RosterTableProps {
   statusPeriods: StatusPeriod[];
   holidayDates: string[];
   violations?: RestViolation[];
+  isReadOnly?: boolean;
   onCellClick: (date: string, rowMilitaryId: number) => void;
   onHeaderClick?: (date: string) => void;
 }
@@ -22,6 +23,7 @@ export const RosterTable: React.FC<RosterTableProps> = ({
   statusPeriods,
   holidayDates,
   violations = [],
+  isReadOnly = false,
   onCellClick,
   onHeaderClick
 }) => {
@@ -153,7 +155,7 @@ export const RosterTable: React.FC<RosterTableProps> = ({
                     content = <span className="text-white/5">—</span>;
                   }
 
-                  const isClickable = !isNavioPausa;
+                  const isClickable = !isReadOnly && !isNavioPausa;
 
                   return (
                     <td 

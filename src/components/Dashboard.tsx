@@ -28,33 +28,276 @@ import {
   History,
   Settings,
   Bell,
-  CheckCircle2
+  CheckCircle2,
+  ArrowUp,
+  RefreshCw,
+  FolderOpen,
+  Save,
+  Edit2,
+  Lock
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { format, isWithinInterval, parseISO } from 'date-fns';
+
+// Open a database for storing DirectoryHandles
+const openDB = (): Promise<IDBDatabase> => {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('ccm_backup_db', 1);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains('handles')) {
+        db.createObjectStore('handles');
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+};
+
+const saveDirectoryHandle = async (handle: FileSystemDirectoryHandle) => {
+  try {
+    const db = await openDB();
+    const tx = db.transaction('handles', 'readwrite');
+    const store = tx.objectStore('handles');
+    store.put(handle, 'backup_dir');
+    return new Promise<boolean>((resolve) => {
+      tx.oncomplete = () => resolve(true);
+    });
+  } catch (e) {
+    console.error('Failed to save directory handle in IndexedDB:', e);
+    return false;
+  }
+};
+
+const getDirectoryHandle = async (): Promise<FileSystemDirectoryHandle | null> => {
+  try {
+    const db = await openDB();
+    const tx = db.transaction('handles', 'readonly');
+    const store = tx.objectStore('handles');
+    const req = store.get('backup_dir');
+    return new Promise<FileSystemDirectoryHandle | null>((resolve) => {
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => resolve(null);
+    });
+  } catch (e) {
+    return null;
+  }
+};
 
 interface DashboardProps {
   militares: Military[];
   roster: RosterEntry[];
   statusPeriods: StatusPeriod[];
   logos: { navy: string; ship: string };
+  isReadOnly?: boolean;
   onLogoUpload: (type: 'navy' | 'ship', e: React.ChangeEvent<HTMLInputElement>) => void;
   onRemoveLogo: (type: 'navy' | 'ship') => void;
   onExportBackup: () => void;
-  onImportBackup: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onImportBackup: (e: React.ChangeEvent<HTMLInputElement> | File) => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ 
   militares, 
   roster, 
-  statusPeriods,
+  statusPeriods, 
   logos,
+  isReadOnly = false,
   onLogoUpload,
   onRemoveLogo,
   onExportBackup,
   onImportBackup
 }) => {
+  const [backupPath, setBackupPath] = React.useState(() => {
+    return localStorage.getItem('ccm_backup_folder_path') || 'C:\\Escalas\\Backup\\';
+  });
+  const [isEditingPath, setIsEditingPath] = React.useState(false);
+  const [pathInput, setPathInput] = React.useState(backupPath);
+  const [showSavedNotification, setShowSavedNotification] = React.useState(false);
+
+  const [dirHandle, setDirHandle] = React.useState<FileSystemDirectoryHandle | null>(null);
+  const [autoLoadState, setAutoLoadState] = React.useState<'idle' | 'checking' | 'success' | 'error'>('idle');
+  const [latestFileName, setLatestFileName] = React.useState<string>('');
+  const [isPickerSupported] = React.useState(() => {
+    return typeof window !== 'undefined' && 'showDirectoryPicker' in window;
+  });
+
+  const [toast, setToast] = React.useState<{ text: string; type: 'success' | 'error' | 'info' } | null>(null);
+
+  const showToast = (text: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setToast({ text, type });
+  };
+
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+  const fallbackFolderInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  React.useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => {
+        setToast(null);
+      }, toast.text.includes('Nova Aba') ? 12000 : 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
+  React.useEffect(() => {
+    const loadSavedDir = async () => {
+      try {
+        const handle = await getDirectoryHandle();
+        if (handle) {
+          setDirHandle(handle);
+          localStorage.setItem('ccm_backup_folder_path', handle.name);
+          setBackupPath(handle.name);
+          setPathInput(handle.name);
+        }
+      } catch (err) {
+        console.error('Failed to load saved directory handle:', err);
+      }
+    };
+    loadSavedDir();
+  }, []);
+
+  const handleLinkDirectory = async () => {
+    if (!isPickerSupported) return;
+    try {
+      const handle = await (window as any).showDirectoryPicker();
+      if (handle) {
+        setDirHandle(handle);
+        await saveDirectoryHandle(handle);
+        localStorage.setItem('ccm_backup_folder_path', handle.name);
+        setBackupPath(handle.name);
+        setPathInput(handle.name);
+        showToast(`Pasta "${handle.name}" vinculada com sucesso!`, 'success');
+      }
+    } catch (err: any) {
+      if (
+        err.name === 'SecurityError' || 
+        err.message?.toLowerCase().includes('sandbox') || 
+        err.message?.toLowerCase().includes('iframe') || 
+        err.message?.toLowerCase().includes('cross-origin') ||
+        err.message?.toLowerCase().includes('gesture')
+      ) {
+        showToast(
+          "O navegador bloqueou a vinculação devido à segurança do painel (iframe). IMPORTANTE: Clique em 'Abrir em Nova Aba' no canto superior direito para ativar esta função nativa, ou use o botão 'Selecionar Pasta (Modo Iframe)'!",
+          'info'
+        );
+      } else if (err.name !== 'AbortError') {
+        showToast("Não foi possível vincular a pasta: " + err.message, 'error');
+      }
+    }
+  };
+
+  const handleUnlinkDirectory = async () => {
+    try {
+      const db = await openDB();
+      const tx = db.transaction('handles', 'readwrite');
+      const store = tx.objectStore('handles');
+      store.delete('backup_dir');
+      setDirHandle(null);
+      setBackupPath('C:\\Escalas\\Backup\\');
+      setPathInput('C:\\Escalas\\Backup\\');
+      localStorage.setItem('ccm_backup_folder_path', 'C:\\Escalas\\Backup\\');
+      showToast("A pasta vinculada foi removida.", 'info');
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleAutoUpdate = async () => {
+    if (!dirHandle) return;
+
+    setAutoLoadState('checking');
+    try {
+      const options = { mode: 'read' as const };
+      const permission = await dirHandle.queryPermission(options);
+      if (permission !== 'granted') {
+        const request = await dirHandle.requestPermission(options);
+        if (request !== 'granted') {
+          throw new Error('Permissão negada para ler a pasta.');
+        }
+      }
+
+      let latestFile: File | null = null;
+      for await (const entry of dirHandle.values()) {
+        if (entry.kind === 'file' && entry.name.toLowerCase().endsWith('.json')) {
+          const file = await entry.getFile();
+          if (!latestFile || file.lastModified > latestFile.lastModified) {
+            latestFile = file;
+          }
+        }
+      }
+
+      if (latestFile) {
+        onImportBackup(latestFile);
+        setLatestFileName(latestFile.name);
+        setAutoLoadState('success');
+        showToast(`Carregado backup mais recente: "${latestFile.name}"!`, 'success');
+        setTimeout(() => setAutoLoadState('idle'), 4000);
+      } else {
+        setAutoLoadState('error');
+        showToast(`Nenhum formato de backup (.json) encontrado na pasta "${dirHandle.name}".`, 'error');
+        setTimeout(() => setAutoLoadState('idle'), 3000);
+      }
+    } catch (err: any) {
+      console.error(err);
+      setAutoLoadState('error');
+      showToast("Erro ao ler arquivos da pasta: " + (err.message || err), 'error');
+      setTimeout(() => setAutoLoadState('idle'), 3000);
+    }
+  };
+
+  const handleFallbackFolderSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    
+    setAutoLoadState('checking');
+    let latestFile: File | null = null;
+    
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (file.name.toLowerCase().endsWith('.json')) {
+        if (!latestFile || file.lastModified > latestFile.lastModified) {
+          latestFile = file;
+        }
+      }
+    }
+    
+    if (latestFile) {
+      try {
+        onImportBackup(latestFile);
+        setLatestFileName(latestFile.name);
+        setAutoLoadState('success');
+        showToast(`Carregado arquivo mais recente: "${latestFile.name}"`, 'success');
+        setTimeout(() => setAutoLoadState('idle'), 4000);
+      } catch (err) {
+        setAutoLoadState('error');
+        showToast("Erro ao importar o arquivo selecionado.", 'error');
+        setTimeout(() => setAutoLoadState('idle'), 3000);
+      }
+    } else {
+      setAutoLoadState('error');
+      showToast("Nenhum arquivo .json de backup encontrado na pasta.", 'error');
+      setTimeout(() => setAutoLoadState('idle'), 3000);
+    }
+  };
+
+  const handleAtualizarClick = () => {
+    if (dirHandle) {
+      handleAutoUpdate();
+    } else {
+      fileInputRef.current?.click();
+    }
+  };
+
+  const handleSavePath = () => {
+    const trimmed = pathInput.trim();
+    localStorage.setItem('ccm_backup_folder_path', trimmed);
+    setBackupPath(trimmed);
+    setIsEditingPath(false);
+    setShowSavedNotification(true);
+    setTimeout(() => setShowSavedNotification(false), 3000);
+  };
+
   const stats = useMemo(() => {
     const serviceCounts = new Map<number, number>();
     roster.forEach(entry => {
@@ -298,12 +541,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <LogoUploadCard 
                 title="Símbolo MB"
                 logo={logos.navy}
+                isReadOnly={isReadOnly}
                 onUpload={(e) => onLogoUpload('navy', e)}
                 onRemove={() => onRemoveLogo('navy')}
               />
               <LogoUploadCard 
                 title="Heraldica"
                 logo={logos.ship}
+                isReadOnly={isReadOnly}
                 onUpload={(e) => onLogoUpload('ship', e)}
                 onRemove={() => onRemoveLogo('ship')}
               />
@@ -313,32 +558,192 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <div className="space-y-4 pt-4 lg:pt-6 border-t border-white/5">
             <div className="flex items-center gap-2 mb-1 lg:mb-2">
               <History className="w-3.5 h-3.5 lg:w-4 h-4 text-accent" />
-              <span className="text-[9px] lg:text-[10px] font-black text-text-muted uppercase tracking-widest">Backup</span>
+              <div className="flex justify-between items-center w-full">
+                <span className="text-[9px] lg:text-[10px] font-black text-text-muted uppercase tracking-widest">Backup & Sincronização</span>
+                {isReadOnly && <span className="text-[8px] font-mono font-bold text-red-400 bg-red-400/10 px-1.5 py-0.5 rounded">ACESSO BLOQUEADO</span>}
+              </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4">
+              {isReadOnly ? (
+                <div 
+                  className="flex items-center justify-center gap-3 px-4 lg:px-6 py-3 lg:py-4 bg-white/5 border border-white/5 text-text-muted/40 rounded-xl lg:rounded-2xl text-[9px] lg:text-[10px] font-black cursor-not-allowed uppercase font-mono"
+                  title="Operação Bloqueada: Libere o acesso para exportar backups"
+                >
+                  <Lock className="w-3.5 h-3.5 lg:w-4 h-4 text-text-muted/30" />
+                  Exportar Bloqueado
+                </div>
+              ) : (
+                <button 
+                  onClick={onExportBackup}
+                  className="flex items-center justify-center gap-3 px-4 lg:px-6 py-3 lg:py-4 bg-accent text-bg-main rounded-xl lg:rounded-2xl text-[9px] lg:text-[10px] font-black shadow-lg hover:brightness-110 transition-all brass-glow uppercase font-mono"
+                >
+                  <ArrowUp className="w-3.5 h-3.5 lg:w-4 h-4" />
+                  Exportar
+                </button>
+              )}
+              
               <button 
-                onClick={onExportBackup}
-                className="flex items-center justify-center gap-3 px-4 lg:px-6 py-3 lg:py-4 bg-accent text-bg-main rounded-xl lg:rounded-2xl text-[9px] lg:text-[10px] font-black shadow-lg hover:brightness-110 transition-all brass-glow uppercase"
+                onClick={handleAtualizarClick}
+                disabled={autoLoadState === 'checking'}
+                className="flex items-center justify-center gap-3 px-4 lg:px-6 py-3 lg:py-4 bg-white/5 border border-white/10 text-text-main rounded-xl lg:rounded-2xl text-[9px] lg:text-[10px] font-black hover:bg-white/10 transition-all uppercase font-mono disabled:opacity-50"
               >
-                <Download className="w-3.5 h-3.5 lg:w-4 h-4" />
-                Exportar
+                <RefreshCw className={cn("w-3.5 h-3.5 lg:w-4 h-4 text-accent", autoLoadState === 'checking' && "animate-spin")} />
+                {autoLoadState === 'checking' ? 'Lendo Pasta...' : 'Atualizar'}
               </button>
-              <label className="flex items-center justify-center gap-3 px-4 lg:px-6 py-3 lg:py-4 bg-white/5 border border-white/10 text-text-main rounded-xl lg:rounded-2xl text-[9px] lg:text-[10px] font-black hover:bg-white/10 transition-all cursor-pointer uppercase">
-                <RotateCcw className="w-3.5 h-3.5 lg:w-4 h-4" />
-                Importar
-                <input type="file" accept=".json" onChange={onImportBackup} className="hidden" />
-              </label>
+
+              {/* Hidden file inputs for manual or fallback selection */}
+              <input 
+                type="file" 
+                accept=".json" 
+                ref={fileInputRef} 
+                onChange={onImportBackup} 
+                className="hidden" 
+              />
+              <input 
+                type="file" 
+                ref={fallbackFolderInputRef} 
+                onChange={handleFallbackFolderSelect} 
+                className="hidden" 
+                {...({ webkitdirectory: "", directory: "" } as any)}
+              />
+            </div>
+
+            {/* Configuração de pasta automática */}
+            <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3 mt-3 lg:mt-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[8px] lg:text-[9px] font-black uppercase text-text-muted flex items-center gap-1.5 font-mono">
+                  <FolderOpen className="w-3 h-3 text-accent" />
+                  Pasta do Backup (Rede/Local):
+                </span>
+                {showSavedNotification && (
+                  <span className="text-[8px] text-green-400 font-bold uppercase tracking-wider animate-pulse font-mono">Salvo!</span>
+                )}
+              </div>
+
+              {dirHandle ? (
+                <div className="flex items-center justify-between gap-2 bg-green-500/5 px-3 py-2 rounded-lg border border-green-500/10">
+                  <span className="text-[10px] text-green-400 font-mono truncate font-bold" title={dirHandle.name}>
+                    ✓ {dirHandle.name} (Ativo)
+                  </span>
+                  <button
+                    onClick={handleUnlinkDirectory}
+                    className="text-[9px] text-red-400 hover:text-red-300 font-bold uppercase font-mono transition-colors"
+                  >
+                    Desvincular
+                  </button>
+                </div>
+              ) : isEditingPath ? (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={pathInput}
+                    onChange={(e) => setPathInput(e.target.value)}
+                    placeholder="Ex: C:\Escalas\Backup\"
+                    className="flex-1 bg-bg-main border border-white/10 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-accent/50 text-text-main font-mono text-[11px]"
+                  />
+                  <button
+                    onClick={handleSavePath}
+                    className="px-3 bg-accent text-bg-main rounded-lg text-[9px] font-bold hover:brightness-110 flex items-center gap-1 shrink-0 uppercase font-mono"
+                  >
+                    <Save className="w-3 h-3" />
+                    Salvar
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between gap-2 bg-black/20 px-3 py-2 rounded-lg border border-white/[0.02]">
+                  <span className="text-[9px] text-text-main font-mono truncate select-all" title="Caminho configurado para referência">
+                    {backupPath || "Nenhum diretório de rede configurado"}
+                  </span>
+                  <button
+                    onClick={() => {
+                      setPathInput(backupPath);
+                      setIsEditingPath(true);
+                    }}
+                    disabled={isReadOnly}
+                    className={cn(
+                      "p-1.5 rounded-md hover:bg-white/5 text-text-muted hover:text-accent transition-colors",
+                      isReadOnly && "opacity-30 cursor-not-allowed"
+                    )}
+                    title={isReadOnly ? "Acesso bloqueado para edição" : "Editar caminho da pasta"}
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+
+              {/* Botão de integração de pasta */}
+              {!dirHandle && (
+                <button
+                  type="button"
+                  onClick={() => fallbackFolderInputRef.current?.click()}
+                  className="w-full mt-2 py-2 bg-accent/5 border border-accent/25 hover:bg-accent/10 text-accent text-[9px] font-bold font-mono uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-2"
+                >
+                  <FolderOpen className="w-3.5 h-3.5 text-accent" />
+                  Selecione pasta
+                </button>
+              )}
+
+              {autoLoadState === 'success' && (
+                <div className="mt-2 text-[9px] text-green-400 font-mono font-bold uppercase tracking-wider animate-pulse flex items-center gap-2 bg-green-500/5 p-2 rounded-lg border border-green-500/10">
+                  <span>✓ Carregado o arquivo mais recente: {latestFileName}</span>
+                </div>
+              )}
+
+              <p className="text-[8px] text-text-muted/65 leading-relaxed uppercase font-mono tracking-wide">
+                Dica: O botão <strong className="text-accent">Atualizar</strong> {dirHandle ? 'detectará e carregará automaticamente o arquivo .json mais novo desta pasta' : 'permitirá escolher o arquivo .json de backup para fins de sincronização'}.
+              </p>
             </div>
           </div>
         </motion.div>
       </div>
+
+      {/* Floating Toast Notification */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            className="fixed bottom-6 right-6 z-[9999] max-w-sm p-4 bg-slate-900/95 backdrop-blur-md border border-white/10 rounded-2xl shadow-2xl flex items-start gap-3 text-left"
+          >
+            <div className={cn(
+              "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-xs font-bold font-mono border",
+              toast.type === 'success' && "bg-green-500/10 border-green-500/20 text-green-400",
+              toast.type === 'error' && "bg-red-500/10 border-red-500/20 text-red-400",
+              toast.type === 'info' && "bg-accent/10 border-accent/20 text-accent"
+            )}>
+              {toast.type === 'success' ? '✓' : toast.type === 'error' ? '✗' : 'ℹ'}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className={cn(
+                "text-[10px] font-bold uppercase tracking-wider",
+                toast.type === 'success' && "text-green-400",
+                toast.type === 'error' && "text-red-400",
+                toast.type === 'info' && "text-accent"
+              )}>
+                {toast.type === 'success' ? 'Sucesso' : toast.type === 'error' ? 'Erro' : 'Aviso do Sistema'}
+              </p>
+              <p className="text-[10px] text-text-muted mt-1 leading-relaxed uppercase font-mono">
+                {toast.text}
+              </p>
+            </div>
+            <button 
+              onClick={() => setToast(null)}
+              className="text-text-muted/60 hover:text-text-main text-[10px] font-bold uppercase font-mono px-1.5 py-0.5 rounded bg-white/5 hover:bg-white/10 transition-colors shrink-0"
+            >
+              Fechar
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };
 
-const LogoUploadCard = ({ title, logo, onUpload, onRemove }: { 
+const LogoUploadCard = ({ title, logo, isReadOnly, onUpload, onRemove }: { 
   title: string, 
   logo: string, 
+  isReadOnly?: boolean,
   onUpload: (e: React.ChangeEvent<HTMLInputElement>) => void,
   onRemove: () => void 
 }) => {
@@ -349,27 +754,38 @@ const LogoUploadCard = ({ title, logo, onUpload, onRemove }: {
         {logo ? (
           <>
             <img src={logo} alt="Logo" className="w-full h-full object-contain" />
-            <div className="absolute inset-0 bg-bg-main/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-              <label className="p-2 bg-accent text-bg-main rounded-xl cursor-pointer hover:scale-110 transition-transform">
-                <Upload className="w-4 h-4" />
-                <input type="file" accept="image/*" onChange={onUpload} className="hidden" />
-              </label>
-              <button 
-                onClick={onRemove}
-                className="p-2 bg-red-500 text-white rounded-xl hover:scale-110 transition-transform"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
+            {!isReadOnly && (
+              <div className="absolute inset-0 bg-bg-main/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                <label className="p-2 bg-accent text-bg-main rounded-xl cursor-pointer hover:scale-110 transition-transform">
+                  <Upload className="w-4 h-4" />
+                  <input type="file" accept="image/*" onChange={onUpload} className="hidden" />
+                </label>
+                <button 
+                  onClick={onRemove}
+                  className="p-2 bg-red-500 text-white rounded-xl hover:scale-110 transition-transform"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            )}
           </>
         ) : (
-          <label className="cursor-pointer flex flex-col items-center gap-2 text-text-muted hover:text-accent transition-colors">
-            <div className="p-3 rounded-2xl bg-white/5 border border-white/5">
-              <Upload className="w-5 h-5 opacity-40" />
+          isReadOnly ? (
+            <div className="flex flex-col items-center gap-2 text-text-muted/40 cursor-not-allowed">
+              <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/5">
+                <Upload className="w-5 h-5 opacity-20" />
+              </div>
+              <span className="text-[9px] font-black uppercase tracking-tighter">Vazio</span>
             </div>
-            <span className="text-[9px] font-black uppercase tracking-tighter">Carregar</span>
-            <input type="file" accept="image/*" onChange={onUpload} className="hidden" />
-          </label>
+          ) : (
+            <label className="cursor-pointer flex flex-col items-center gap-2 text-text-muted hover:text-accent transition-colors">
+              <div className="p-3 rounded-2xl bg-white/5 border border-white/5">
+                <Upload className="w-5 h-5 opacity-40" />
+              </div>
+              <span className="text-[9px] font-black uppercase tracking-tighter">Carregar</span>
+              <input type="file" accept="image/*" onChange={onUpload} className="hidden" />
+            </label>
+          )
         )}
       </div>
     </div>

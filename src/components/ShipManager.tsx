@@ -5,12 +5,14 @@ import { format, parseISO } from 'date-fns';
 
 interface ShipManagerProps {
   shipPeriods: ShipPeriod[];
+  isReadOnly?: boolean;
   onAdd: (period: Omit<ShipPeriod, 'id'>) => void;
   onRemove: (id: number) => void;
 }
 
 export const ShipManager: React.FC<ShipManagerProps> = ({ 
   shipPeriods, 
+  isReadOnly = false,
   onAdd, 
   onRemove 
 }) => {
@@ -21,6 +23,7 @@ export const ShipManager: React.FC<ShipManagerProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isReadOnly) return;
     onAdd(formData);
   };
 
@@ -28,36 +31,42 @@ export const ShipManager: React.FC<ShipManagerProps> = ({
     <div className="flex flex-col gap-6 lg:gap-8">
       <div className="glass-panel p-4 lg:p-8 rounded-2xl lg:rounded-[2rem] border border-white/5 shadow-2xl">
         <div className="label-tech mb-1 text-[8px] lg:text-[10px]">Comissões</div>
-        <h3 className="text-lg lg:text-xl font-display font-black text-text-main tracking-tight mb-4 lg:mb-8 flex items-center gap-3">
-          <Ship className="w-5 h-5 lg:w-6 lg:h-6 text-accent" />
-          Registrar Suspender
+        <h3 className="text-lg lg:text-xl font-display font-black text-text-main tracking-tight mb-4 lg:mb-8 flex justify-between items-center">
+          <span className="flex items-center gap-3">
+            <Ship className="w-5 h-5 lg:w-6 lg:h-6 text-accent" />
+            Registrar Suspender
+          </span>
+          {isReadOnly && <span className="text-xs text-red-400 font-mono font-bold uppercase tracking-widest bg-red-400/10 px-2 py-1 rounded">Acesso Bloqueado</span>}
         </h3>
         <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6 items-end">
-          <div className="flex flex-col gap-1.5 lg:gap-2">
-            <label className="label-tech text-[8px] lg:text-[10px]">Suspender</label>
-            <input
-              type="datetime-local"
-              value={formData.start}
-              onChange={(e) => setFormData({ ...formData, start: e.target.value })}
-              className="w-full bg-bg-main border border-white/10 rounded-xl px-4 py-2.5 lg:py-3 text-xs lg:text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main"
-            />
-          </div>
-          <div className="flex flex-col gap-1.5 lg:gap-2">
-            <label className="label-tech text-[8px] lg:text-[10px]">Retorno</label>
-            <input
-              type="datetime-local"
-              value={formData.end}
-              onChange={(e) => setFormData({ ...formData, end: e.target.value })}
-              className="w-full bg-bg-main border border-white/10 rounded-xl px-4 py-2.5 lg:py-3 text-xs lg:text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main"
-            />
-          </div>
-          <button
-            type="submit"
-            className="w-full px-6 py-2.5 lg:py-3 bg-accent text-bg-main rounded-xl text-xs lg:text-sm font-black hover:brightness-110 transition-all shadow-lg brass-glow flex items-center justify-center gap-2 h-[42px] lg:h-[46px]"
-          >
-            <Plus className="w-4 h-4" />
-            Salvar
-          </button>
+          <fieldset disabled={isReadOnly} className="col-span-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6 items-end">
+            <div className="flex flex-col gap-1.5 lg:gap-2">
+              <label className="label-tech text-[8px] lg:text-[10px]">Suspender</label>
+              <input
+                type="datetime-local"
+                value={formData.start}
+                onChange={(e) => setFormData({ ...formData, start: e.target.value })}
+                className="w-full bg-bg-main border border-white/10 rounded-xl px-4 py-2.5 lg:py-3 text-xs lg:text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main disabled:opacity-50"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5 lg:gap-2">
+              <label className="label-tech text-[8px] lg:text-[10px]">Retorno</label>
+              <input
+                type="datetime-local"
+                value={formData.end}
+                onChange={(e) => setFormData({ ...formData, end: e.target.value })}
+                className="w-full bg-bg-main border border-white/10 rounded-xl px-4 py-2.5 lg:py-3 text-xs lg:text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 text-text-main disabled:opacity-50"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={isReadOnly}
+              className="w-full px-6 py-2.5 lg:py-3 bg-accent text-bg-main disabled:bg-white/5 disabled:text-text-muted disabled:border disabled:border-white/5 disabled:shadow-none rounded-xl text-xs lg:text-sm font-black hover:brightness-110 transition-all shadow-lg brass-glow flex items-center justify-center gap-2 h-[42px] lg:h-[46px] disabled:pointer-events-none"
+            >
+              <Plus className="w-4 h-4" />
+              {isReadOnly ? "Bloqueado" : "Salvar"}
+            </button>
+          </fieldset>
         </form>
         
         <div className="mt-6 lg:mt-8 p-4 lg:p-6 bg-white/5 rounded-2xl border border-white/5 flex flex-col sm:flex-row gap-4 lg:gap-5">
@@ -96,12 +105,14 @@ export const ShipManager: React.FC<ShipManagerProps> = ({
                 <p className="text-[8px] lg:text-[10px] text-text-muted uppercase tracking-widest font-mono font-bold mt-0.5 lg:mt-1">Missão Operacional</p>
               </div>
             </div>
-            <button
-              onClick={() => onRemove(p.id)}
-              className="p-2 lg:p-3 bg-red-500/10 hover:bg-red-500/20 rounded-xl text-red-400 transition-all border border-red-500/20 sm:opacity-0 sm:group-hover:opacity-100 relative z-10 shrink-0"
-            >
-              <Trash2 className="w-4 h-4 lg:w-5 lg:h-5" />
-            </button>
+            {!isReadOnly && (
+              <button
+                onClick={() => onRemove(p.id)}
+                className="p-2 lg:p-3 bg-red-500/10 hover:bg-red-500/20 rounded-xl text-red-400 transition-all border border-red-500/20 sm:opacity-0 sm:group-hover:opacity-100 relative z-10 shrink-0"
+              >
+                <Trash2 className="w-4 h-4 lg:w-5 lg:h-5" />
+              </button>
+            )}
             <div className="absolute -right-4 -bottom-4 opacity-[0.02] pointer-events-none">
               <Ship className="w-32 h-32" />
             </div>
