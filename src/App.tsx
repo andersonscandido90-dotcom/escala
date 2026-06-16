@@ -55,43 +55,48 @@ import { cn } from './lib/utils';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
+import { 
+  INITIAL_SERVICES, 
+  INITIAL_ACTIVE_SERVICE_ID, 
+  INITIAL_SIGNATURE_DATA, 
+  INITIAL_EXPORT_MAPPINGS 
+} from './initialData';
 
 const STORAGE_KEY = 'escala_pro_data';
 
+const initialActiveService = INITIAL_SERVICES.find(s => s.id === INITIAL_ACTIVE_SERVICE_ID) || INITIAL_SERVICES[0];
+
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'roster' | 'personnel' | 'status' | 'ship' | 'help'>('roster');
+  const [activeTab, setActiveTab ] = useState<'dashboard' | 'roster' | 'personnel' | 'status' | 'ship' | 'help'>('roster');
   
   // Multi-service State
-  const [services, setServices] = useState<RosterService[]>([]);
-  const [activeServiceId, setActiveServiceId] = useState<number | null>(null);
+  const [services, setServices] = useState<RosterService[]>(INITIAL_SERVICES);
+  const [activeServiceId, setActiveServiceId] = useState<number | null>(INITIAL_ACTIVE_SERVICE_ID);
 
   // Current Active Service State
-  const [militares, setMilitares] = useState<Military[]>([]);
-  const [statusPeriods, setStatusPeriods] = useState<StatusPeriod[]>([]);
-  const [shipPeriods, setShipPeriods] = useState<ShipPeriod[]>([]);
-  const [manualSwaps, setManualSwaps] = useState<ManualSwap[]>([]);
-  const [acompDuration, setAcompDuration] = useState(3);
-  const [rosterModel, setRosterModel] = useState<RosterModel>('CORRIDA');
-  const [holidayDates, setHolidayDates] = useState<string[]>([]);
+  const [militares, setMilitares] = useState<Military[]>(initialActiveService.militares);
+  const [statusPeriods, setStatusPeriods] = useState<StatusPeriod[]>(initialActiveService.statusPeriods || []);
+  const [shipPeriods, setShipPeriods] = useState<ShipPeriod[]>(initialActiveService.shipPeriods || []);
+  const [manualSwaps, setManualSwaps] = useState<ManualSwap[]>(initialActiveService.manualSwaps || []);
+  const [acompDuration, setAcompDuration] = useState(initialActiveService.acompDuration || 3);
+  const [rosterModel, setRosterModel] = useState<RosterModel>(initialActiveService.rosterModel || 'CORRIDA');
+  const [holidayDates, setHolidayDates] = useState<string[]>(initialActiveService.holidayDates || []);
   const [config, setConfig] = useState({
-    startDate: format(addDays(new Date(), 1), 'yyyy-MM-dd'),
-    days: 30,
-    quartoOrder: 'MODERNO_PRIMEIRO' as 'MODERNO_PRIMEIRO' | 'ANTIGO_PRIMEIRO',
-    militaryOrder: 'MAIS_MODERNO' as 'MAIS_MODERNO' | 'MAIS_ANTIGO',
-    militaryOrderVermelha: 'MAIS_MODERNO' as 'MAIS_MODERNO' | 'MAIS_ANTIGO',
-    skipVermelha: false
+    startDate: initialActiveService.config?.startDate || format(addDays(new Date(), 1), 'yyyy-MM-dd'),
+    days: initialActiveService.config?.days || 30,
+    quartoOrder: (initialActiveService.config?.quartoOrder || 'MODERNO_PRIMEIRO') as 'MODERNO_PRIMEIRO' | 'ANTIGO_PRIMEIRO',
+    militaryOrder: (initialActiveService.config?.militaryOrder || 'MAIS_MODERNO') as 'MAIS_MODERNO' | 'MAIS_ANTIGO',
+    militaryOrderVermelha: (initialActiveService.config?.militaryOrderVermelha || 'MAIS_MODERNO') as 'MAIS_MODERNO' | 'MAIS_ANTIGO',
+    skipVermelha: initialActiveService.config?.skipVermelha || false
   });
 
   // IDs
-  const [nextIds, setNextIds] = useState({ military: 1, status: 1, ship: 1 });
-  const [serviceName, setServiceName] = useState("Escala Geral");
+  const [nextIds, setNextIds] = useState(initialActiveService.nextIds || { military: 1, status: 1, ship: 1 });
+  const [serviceName, setServiceName] = useState(initialActiveService.name);
   const [newServiceName, setNewServiceName] = useState("");
   const [isFullScreen, setIsFullScreen] = useState(false);
-  const [signatureData, setSignatureData] = useState({
-    chefe: { name: 'BRUNO AFONSO PINTO', rank: 'Capitão de Fragata', title: 'Chefe do Departamento de Máquinas' },
-    detalhista: { name: 'ANDRE VINICIUS FERNANDES DA SILVA', rank: 'Terceiro-Sargento (MO)', title: 'Detalhista do Departamento de Máquinas' }
-  });
-  const [exportMappings, setExportMappings] = useState<Record<string, number | null>>({});
+  const [signatureData, setSignatureData] = useState(INITIAL_SIGNATURE_DATA);
+  const [exportMappings, setExportMappings] = useState<Record<string, number | null>>(INITIAL_EXPORT_MAPPINGS);
   const [logos, setLogos] = useState({
     navy: '', // base64
     ship: ''  // base64
@@ -181,88 +186,15 @@ export default function App() {
         console.error('Error loading data', e);
       }
     } else {
-      // Default initial data
-      const names = [
-        'ANDRE VINICIUS', 'SILVA JUNIOR', 'SANTOS', 'FERREIRA', 
-        'OLIVEIRA', 'COSTA', 'RODRIGUES', 'ALMEIDA', 
-        'PIMENTA', 'GOMES', 'MARTINS', 'CARVALHO',
-        'TEIXEIRA', 'MACHADO', 'NEVES', 'SOUSA'
-      ];
-      const ranks = ['3SG', 'CB', 'CB', 'MN', 'MN', 'MN', '3SG', 'CB', 'CB', 'MN', 'MN', 'MN', '3SG', 'CB', 'CB', 'MN'];
-      const specs = ['MO', 'MO', 'MO', 'MO', 'MO', 'MO', 'EL', 'EL', 'EL', 'EL', 'EL', 'EL', 'MR', 'MR', 'MR', 'MR'];
-
-      const initialMilitares: Military[] = names.map((name, i) => ({
-        id: i + 1,
-        name,
-        posto: ranks[i],
-        especialidade: specs[i],
-        quarto: (i % 4) + 1,
-        antiguidade: i + 1
-      }));
-
-      const today = new Date();
-      const nextWeek = addDays(today, 7);
-      const nextWeekEnd = addDays(today, 10);
-
-      const initialService: RosterService = {
-        id: Date.now(),
-        name: "Escala Geral",
-        militares: initialMilitares,
-        statusPeriods: [
-          {
-            id: 1,
-            militaryId: 5,
-            type: 'FERIAS',
-            start: format(today, 'yyyy-MM-dd'),
-            end: format(addDays(today, 15), 'yyyy-MM-dd')
-          }
-        ],
-        shipPeriods: [
-          {
-            id: 1,
-            start: format(nextWeek, "yyyy-MM-dd'T'09:00"),
-            end: format(nextWeekEnd, "yyyy-MM-dd'T'17:00")
-          }
-        ],
-        manualSwaps: [],
-        acompDuration: 3,
-        rosterModel: 'QUARTOS',
-        holidayDates: [],
-        nextIds: { military: 17, status: 2, ship: 2 },
-        config: { 
-          startDate: format(addDays(today, 1), 'yyyy-MM-dd'), 
-          days: 30,
-          quartoOrder: 'MODERNO_PRIMEIRO',
-          militaryOrder: 'MAIS_MODERNO',
-          militaryOrderVermelha: 'MAIS_MODERNO',
-          skipVermelha: false
-        }
-      };
-
-      const secondService: RosterService = {
-        id: Date.now() + 1,
-        name: "Escala de Manutenção",
-        militares: initialMilitares.slice(0, 8),
-        statusPeriods: [],
-        shipPeriods: [],
-        manualSwaps: [],
-        acompDuration: 1,
-        rosterModel: 'CORRIDA',
-        holidayDates: [],
-        nextIds: { military: 9, status: 1, ship: 1 },
-        config: { 
-          startDate: format(addDays(today, 1), 'yyyy-MM-dd'), 
-          days: 30,
-          quartoOrder: 'MODERNO_PRIMEIRO',
-          militaryOrder: 'MAIS_MODERNO',
-          militaryOrderVermelha: 'MAIS_MODERNO',
-          skipVermelha: false
-        }
-      };
-
-      setServices([initialService, secondService]);
-      setActiveServiceId(initialService.id);
-      loadServiceData(initialService);
+      // Direct defaults are already initialized, but sync just in case
+      setServices(INITIAL_SERVICES);
+      setActiveServiceId(INITIAL_ACTIVE_SERVICE_ID);
+      const active = INITIAL_SERVICES.find(s => s.id === INITIAL_ACTIVE_SERVICE_ID) || INITIAL_SERVICES[0];
+      if (active) {
+        loadServiceData(active);
+      }
+      setSignatureData(INITIAL_SIGNATURE_DATA);
+      setExportMappings(INITIAL_EXPORT_MAPPINGS);
     }
   }, []);
 
